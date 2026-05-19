@@ -21,6 +21,15 @@ public sealed class LoanProductsApiClient
             cancellationToken);
     }
 
+    public async Task<ApiResponse<LoanProductDto>?> GetLoanProductByIdAsync(
+        Guid id,
+        CancellationToken cancellationToken = default)
+    {
+        return await _httpClient.GetFromJsonAsync<ApiResponse<LoanProductDto>>(
+            $"api/loan-products/{id}",
+            cancellationToken);
+    }
+
     public async Task<ApiResponse<Guid>?> CreateLoanProductAsync(
         CreateLoanProductRequest request,
         CancellationToken cancellationToken = default)

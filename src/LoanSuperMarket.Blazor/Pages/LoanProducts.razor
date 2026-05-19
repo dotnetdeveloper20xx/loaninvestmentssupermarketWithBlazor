@@ -1,5 +1,6 @@
 @page "/loan-products"
 @inject LoanProductsApiClient LoanProductsApiClient
+@inject NavigationManager NavigationManager
 
 <PageHeader Title="Loan Products"
             Subtitle="Browse and manage lending products available in the marketplace.">
@@ -11,238 +12,103 @@
     </ActionContent>
 </PageHeader>
 
-@if (_isLoading)
+@if (!string.IsNullOrWhiteSpace(_errorMessage))
 {
-    <AppCard>
-        <div class="flex min-h-64 items-center justify-center">
-            <div class="text-center">
-                <div class="mx-auto h-10 w-10 animate-spin rounded-full border-4 border-blue-100 border-t-blue-600"></div>
-                <p class="mt-4 text-sm text-slate-500">Loading loan products...</p>
-            </div>
-        </div>
-    </AppCard>
-}
-else if (!string.IsNullOrWhiteSpace(_errorMessage))
-{
-    <div class="rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+    <div class="mb-6 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
         @_errorMessage
     </div>
 }
-else if (_loanProducts.Count == 0)
-{
-    <AppCard>
-        <div class="flex min-h-64 flex-col items-center justify-center text-center">
-            <div class="text-5xl">🏦</div>
-            <h3 class="mt-4 text-lg font-semibold text-slate-900">No loan products found</h3>
-            <p class="mt-2 max-w-md text-sm text-slate-500">
-                Once lenders create loan products, they will appear here.
-            </p>
-            <button class="mt-6 rounded-xl bg-blue-600 px-5 py-3 text-sm font-semibold text-white shadow-sm hover:bg-blue-700"
-                    @onclick="OpenCreateModal">
-                Create First Loan Product
-            </button>
-        </div>
-    </AppCard>
-}
-else
-{
-    <div class="grid grid-cols-1 gap-6 lg:grid-cols-2 xl:grid-cols-3">
+
+<AppDataTable Title="Loan Product Management"
+              Subtitle="Operational view of lender products, marketplace status and lending criteria."
+              IsLoading="_isLoading"
+              IsEmpty="@(!_isLoading && _loanProducts.Count == 0)"
+              LoadingText="Loading loan products..."
+              EmptyIcon="🏦"
+              EmptyTitle="No loan products found"
+              EmptyMessage="Once lenders create loan products, they will appear here for review and management.">
+
+    <HeaderActions>
+        <button class="rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm hover:bg-slate-50"
+                @onclick="LoadLoanProductsAsync">
+            Refresh
+        </button>
+    </HeaderActions>
+
+    <EmptyActions>
+        <button class="rounded-xl bg-blue-600 px-5 py-3 text-sm font-semibold text-white shadow-sm hover:bg-blue-700"
+                @onclick="OpenCreateModal">
+            Create First Loan Product
+        </button>
+    </EmptyActions>
+
+    <HeaderTemplate>
+        <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">Product</th>
+        <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">Amount Range</th>
+        <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">Interest</th>
+        <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">Term</th>
+        <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">Status</th>
+        <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">Created</th>
+        <th class="px-6 py-4 text-right text-xs font-semibold uppercase tracking-wide text-slate-500">Actions</th>
+    </HeaderTemplate>
+
+    <RowTemplate>
         @foreach (var product in _loanProducts)
         {
-            <AppCard Class="transition-shadow hover:shadow-md">
-                <div class="flex items-start justify-between gap-4">
+            <tr class="hover:bg-slate-50">
+                <td class="px-6 py-4">
                     <div>
-                        <h3 class="text-lg font-bold text-slate-900">@product.Title</h3>
-                        <p class="mt-2 line-clamp-3 text-sm text-slate-500">@product.Description</p>
+                        <div class="font-semibold text-slate-900">
+                            @product.Title
+                        </div>
+                        <div class="mt-1 max-w-sm truncate text-sm text-slate-500">
+                            @product.Description
+                        </div>
                     </div>
+                </td>
 
+                <td class="px-6 py-4 text-sm text-slate-700">
+                    £@product.MinimumAmount.ToString("N0") - £@product.MaximumAmount.ToString("N0")
+                </td>
+
+                <td class="px-6 py-4 text-sm font-semibold text-slate-900">
+                    @product.InterestRate.ToString("N2")%
+                </td>
+
+                <td class="px-6 py-4 text-sm text-slate-700">
+                    @product.MinimumTermMonths - @product.MaximumTermMonths months
+                </td>
+
+                <td class="px-6 py-4">
                     <span class="@GetStatusClass(product.Status)">
                         @product.Status
                     </span>
-                </div>
+                </td>
 
-                <div class="mt-6 grid grid-cols-2 gap-4">
-                    <div class="rounded-xl bg-slate-50 p-4">
-                        <div class="text-xs font-medium uppercase tracking-wide text-slate-500">Amount Range</div>
-                        <div class="mt-2 text-sm font-semibold text-slate-900">
-                            £@product.MinimumAmount.ToString("N0") - £@product.MaximumAmount.ToString("N0")
-                        </div>
-                    </div>
+                <td class="px-6 py-4 text-sm text-slate-500">
+                    @product.CreatedAtUtc.ToLocalTime().ToString("dd MMM yyyy")
+                </td>
 
-                    <div class="rounded-xl bg-slate-50 p-4">
-                        <div class="text-xs font-medium uppercase tracking-wide text-slate-500">Interest Rate</div>
-                        <div class="mt-2 text-sm font-semibold text-slate-900">
-                            @product.InterestRate.ToString("N2")%
-                        </div>
-                    </div>
-
-                    <div class="rounded-xl bg-slate-50 p-4">
-                        <div class="text-xs font-medium uppercase tracking-wide text-slate-500">Term</div>
-                        <div class="mt-2 text-sm font-semibold text-slate-900">
-                            @product.MinimumTermMonths - @product.MaximumTermMonths months
-                        </div>
-                    </div>
-
-                    <div class="rounded-xl bg-slate-50 p-4">
-                        <div class="text-xs font-medium uppercase tracking-wide text-slate-500">Currency</div>
-                        <div class="mt-2 text-sm font-semibold text-slate-900">@product.Currency</div>
-                    </div>
-                </div>
-
-                <div class="mt-6 flex items-center justify-between border-t border-slate-100 pt-4">
-                    <div class="text-xs text-slate-500">
-                        Created @product.CreatedAtUtc.ToLocalTime().ToString("dd MMM yyyy")
-                    </div>
-
-                    <button class="rounded-lg border border-blue-200 px-3 py-2 text-xs font-semibold text-blue-700 hover:bg-blue-50">
+                <td class="px-6 py-4 text-right">
+                    <button class="rounded-lg border border-blue-200 px-3 py-2 text-xs font-semibold text-blue-700 hover:bg-blue-50"
+                            @onclick="() => ViewDetails(product.Id)">
                         View Details
                     </button>
-                </div>
-            </AppCard>
+                </td>
+            </tr>
         }
-    </div>
-}
+    </RowTemplate>
+</AppDataTable>
 
-@if (_isCreateModalOpen)
-{
-    <div class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 px-4 backdrop-blur-sm">
-        <div class="max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-2xl bg-white p-8 shadow-2xl">
-            <div class="flex items-start justify-between gap-4">
-                <div>
-                    <h3 class="text-2xl font-bold text-slate-900">Create Loan Product</h3>
-                    <p class="mt-2 text-sm text-slate-500">
-                        Add a new lending product for borrowers to apply against.
-                    </p>
-                </div>
-
-                <button class="rounded-full p-2 text-slate-400 hover:bg-slate-100 hover:text-slate-700"
-                        @onclick="CloseCreateModal">
-                    ✕
-                </button>
-            </div>
-
-            @if (_createErrors.Count > 0)
-            {
-                <div class="mt-6 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
-                    <strong>Unable to create product</strong>
-                    <ul class="mt-2 list-disc pl-5">
-                        @foreach (var error in _createErrors)
-                        {
-                            <li>@error</li>
-                        }
-                    </ul>
-                </div>
-            }
-
-            <div class="mt-8 grid grid-cols-1 gap-5 md:grid-cols-2">
-                <div class="md:col-span-2">
-                    <label class="mb-2 block text-sm font-semibold text-slate-700">
-                        Product title
-                    </label>
-                    <input class="@InputClass"
-                           @bind="_createModel.Title"
-                           placeholder="Prime Personal Loan" />
-                </div>
-
-                <div class="md:col-span-2">
-                    <label class="mb-2 block text-sm font-semibold text-slate-700">
-                        Description
-                    </label>
-                    <textarea class="@TextAreaClass"
-                              @bind="_createModel.Description"
-                              placeholder="Describe who this product is suitable for..."></textarea>
-                </div>
-
-                <div>
-                    <label class="mb-2 block text-sm font-semibold text-slate-700">
-                        Minimum amount
-                    </label>
-                    <input type="number" class="@InputClass"
-                           @bind="_createModel.MinimumAmount" />
-                </div>
-
-                <div>
-                    <label class="mb-2 block text-sm font-semibold text-slate-700">
-                        Maximum amount
-                    </label>
-                    <input type="number" class="@InputClass"
-                           @bind="_createModel.MaximumAmount" />
-                </div>
-
-                <div>
-                    <label class="mb-2 block text-sm font-semibold text-slate-700">
-                        Interest rate %
-                    </label>
-                    <input type="number" step="0.01" class="@InputClass"
-                           @bind="_createModel.InterestRate" />
-                </div>
-
-                <div>
-                    <label class="mb-2 block text-sm font-semibold text-slate-700">
-                        Lender ID
-                    </label>
-                    <input class="@InputClass"
-                           @bind="_lenderIdText" />
-                </div>
-
-                <div>
-                    <label class="mb-2 block text-sm font-semibold text-slate-700">
-                        Minimum term months
-                    </label>
-                    <input type="number" class="@InputClass"
-                           @bind="_createModel.MinimumTermMonths" />
-                </div>
-
-                <div>
-                    <label class="mb-2 block text-sm font-semibold text-slate-700">
-                        Maximum term months
-                    </label>
-                    <input type="number" class="@InputClass"
-                           @bind="_createModel.MaximumTermMonths" />
-                </div>
-            </div>
-
-            <div class="mt-8 flex justify-end gap-3 border-t border-slate-200 pt-5">
-                <button class="rounded-xl px-5 py-3 text-sm font-semibold text-slate-600 hover:bg-slate-100"
-                        @onclick="CloseCreateModal"
-                        disabled="@_isSaving">
-                    Cancel
-                </button>
-
-                <button class="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-5 py-3 text-sm font-semibold text-white shadow-sm hover:bg-blue-700 disabled:opacity-60"
-                        @onclick="CreateLoanProductAsync"
-                        disabled="@_isSaving">
-                    @if (_isSaving)
-                    {
-                        <span class="h-4 w-4 animate-spin rounded-full border-2 border-blue-200 border-t-white"></span>
-                        <span>Saving...</span>
-                    }
-                    else
-                    {
-                        <span>Create Product</span>
-                    }
-                </button>
-            </div>
-        </div>
-    </div>
-}
+<CreateLoanProductModal IsOpen="_isCreateModalOpen"
+                        OnClose="CloseCreateModal"
+                        OnCreated="HandleLoanProductCreated" />
 
 @code {
-    private const string InputClass =
-        "w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-100";
-
-    private const string TextAreaClass =
-        "min-h-32 w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-100";
-
     private List<LoanProductDto> _loanProducts = [];
     private bool _isLoading = true;
     private bool _isCreateModalOpen;
-    private bool _isSaving;
     private string? _errorMessage;
-    private List<string> _createErrors = [];
-
-    private CreateLoanProductRequest _createModel = new();
-    private string _lenderIdText = "11111111-1111-1111-1111-111111111111";
 
     protected override async Task OnInitializedAsync()
     {
@@ -286,75 +152,22 @@ else
 
     private void OpenCreateModal()
     {
-        _createErrors = [];
-        _createModel = new CreateLoanProductRequest
-        {
-            Title = "",
-            Description = "",
-            MinimumAmount = 1000,
-            MaximumAmount = 25000,
-            InterestRate = 12.5m,
-            MinimumTermMonths = 12,
-            MaximumTermMonths = 60
-        };
-
-        _lenderIdText = "11111111-1111-1111-1111-111111111111";
         _isCreateModalOpen = true;
     }
 
     private void CloseCreateModal()
     {
-        if (_isSaving)
-        {
-            return;
-        }
-
         _isCreateModalOpen = false;
     }
 
-    private async Task CreateLoanProductAsync()
+    private async Task HandleLoanProductCreated()
     {
-        _createErrors = [];
+        await LoadLoanProductsAsync();
+    }
 
-        if (!Guid.TryParse(_lenderIdText, out var lenderId))
-        {
-            _createErrors.Add("Lender ID must be a valid GUID.");
-            return;
-        }
-
-        _createModel.LenderId = lenderId;
-        _isSaving = true;
-
-        try
-        {
-            var response = await LoanProductsApiClient.CreateLoanProductAsync(_createModel);
-
-            if (response is null)
-            {
-                _createErrors.Add("No response received from the API.");
-                return;
-            }
-
-            if (!response.Success)
-            {
-                _createErrors = response.Errors.Count > 0
-                    ? response.Errors
-                    : ["Failed to create loan product."];
-
-                return;
-            }
-
-            _isCreateModalOpen = false;
-            await LoadLoanProductsAsync();
-        }
-        catch (Exception exception)
-        {
-            _createErrors.Add($"Unable to create loan product. {exception.Message}");
-        }
-        finally
-        {
-            _isSaving = false;
-        }
+    private void ViewDetails(Guid id)
+    {
+        NavigationManager.NavigateTo($"/loan-products/{id}");
     }
 
     private static string GetStatusClass(string status)

@@ -1,0 +1,203 @@
+@inject LoanProductsApiClient LoanProductsApiClient
+
+@if (IsOpen)
+{
+    <div class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 px-4 backdrop-blur-sm">
+        <div class="max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-2xl bg-white p-8 shadow-2xl">
+            <div class="flex items-start justify-between gap-4">
+                <div>
+                    <h3 class="text-2xl font-bold text-slate-900">Create Loan Product</h3>
+                    <p class="mt-2 text-sm text-slate-500">
+                        Add a new lending product for borrowers to apply against.
+                    </p>
+                </div>
+
+                <button class="rounded-full p-2 text-slate-400 hover:bg-slate-100 hover:text-slate-700"
+                        @onclick="CloseAsync">
+                    ✕
+                </button>
+            </div>
+
+            @if (_errors.Count > 0)
+            {
+                <div class="mt-6 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+                    <strong>Unable to create product</strong>
+                    <ul class="mt-2 list-disc pl-5">
+                        @foreach (var error in _errors)
+                        {
+                            <li>@error</li>
+                        }
+                    </ul>
+                </div>
+            }
+
+            <div class="mt-8 grid grid-cols-1 gap-5 md:grid-cols-2">
+                <div class="md:col-span-2">
+                    <label class="mb-2 block text-sm font-semibold text-slate-700">Product title</label>
+                    <input class="@InputClass" @bind="_model.Title" placeholder="Prime Personal Loan" />
+                </div>
+
+                <div class="md:col-span-2">
+                    <label class="mb-2 block text-sm font-semibold text-slate-700">Description</label>
+                    <textarea class="@TextAreaClass" @bind="_model.Description" placeholder="Describe who this product is suitable for..."></textarea>
+                </div>
+
+                <div>
+                    <label class="mb-2 block text-sm font-semibold text-slate-700">Minimum amount</label>
+                    <input type="number" class="@InputClass" @bind="_model.MinimumAmount" />
+                </div>
+
+                <div>
+                    <label class="mb-2 block text-sm font-semibold text-slate-700">Maximum amount</label>
+                    <input type="number" class="@InputClass" @bind="_model.MaximumAmount" />
+                </div>
+
+                <div>
+                    <label class="mb-2 block text-sm font-semibold text-slate-700">Interest rate %</label>
+                    <input type="number" step="0.01" class="@InputClass" @bind="_model.InterestRate" />
+                </div>
+
+                <div>
+                    <label class="mb-2 block text-sm font-semibold text-slate-700">Lender ID</label>
+                    <input class="@InputClass" @bind="_lenderIdText" />
+                </div>
+
+                <div>
+                    <label class="mb-2 block text-sm font-semibold text-slate-700">Minimum term months</label>
+                    <input type="number" class="@InputClass" @bind="_model.MinimumTermMonths" />
+                </div>
+
+                <div>
+                    <label class="mb-2 block text-sm font-semibold text-slate-700">Maximum term months</label>
+                    <input type="number" class="@InputClass" @bind="_model.MaximumTermMonths" />
+                </div>
+            </div>
+
+            <div class="mt-8 flex justify-end gap-3 border-t border-slate-200 pt-5">
+                <button class="rounded-xl px-5 py-3 text-sm font-semibold text-slate-600 hover:bg-slate-100"
+                        @onclick="CloseAsync"
+                        disabled="@_isSaving">
+                    Cancel
+                </button>
+
+                <button class="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-5 py-3 text-sm font-semibold text-white shadow-sm hover:bg-blue-700 disabled:opacity-60"
+                        @onclick="CreateAsync"
+                        disabled="@_isSaving">
+                    @if (_isSaving)
+                    {
+                        <span class="h-4 w-4 animate-spin rounded-full border-2 border-blue-200 border-t-white"></span>
+                        <span>Saving...</span>
+                    }
+                    else
+                    {
+                        <span>Create Product</span>
+                    }
+                </button>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private const string InputClass =
+        "w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-100";
+
+    private const string TextAreaClass =
+        "min-h-32 w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-100";
+
+    private readonly List<string> _errors = [];
+    private CreateLoanProductRequest _model = new();
+    private string _lenderIdText = "11111111-1111-1111-1111-111111111111";
+    private bool _isSaving;
+
+    [Parameter]
+    public bool IsOpen { get; set; }
+
+    [Parameter]
+    public EventCallback OnClose { get; set; }
+
+    [Parameter]
+    public EventCallback OnCreated { get; set; }
+
+    protected override void OnParametersSet()
+    {
+        if (IsOpen && string.IsNullOrWhiteSpace(_model.Title) && !_isSaving)
+        {
+            ResetForm();
+        }
+    }
+
+    private void ResetForm()
+    {
+        _errors.Clear();
+
+        _model = new CreateLoanProductRequest
+        {
+            Title = "",
+            Description = "",
+            MinimumAmount = 1000,
+            MaximumAmount = 25000,
+            InterestRate = 12.5m,
+            MinimumTermMonths = 12,
+            MaximumTermMonths = 60
+        };
+
+        _lenderIdText = "11111111-1111-1111-1111-111111111111";
+    }
+
+    private async Task CloseAsync()
+    {
+        if (_isSaving)
+        {
+            return;
+        }
+
+        await OnClose.InvokeAsync();
+    }
+
+    private async Task CreateAsync()
+    {
+        _errors.Clear();
+
+        if (!Guid.TryParse(_lenderIdText, out var lenderId))
+        {
+            _errors.Add("Lender ID must be a valid GUID.");
+            return;
+        }
+
+        _model.LenderId = lenderId;
+        _isSaving = true;
+
+        try
+        {
+            var response = await LoanProductsApiClient.CreateLoanProductAsync(_model);
+
+            if (response is null)
+            {
+                _errors.Add("No response received from the API.");
+                return;
+            }
+
+            if (!response.Success)
+            {
+                _errors.AddRange(response.Errors.Count > 0
+                    ? response.Errors
+                    : ["Failed to create loan product."]);
+
+                return;
+            }
+
+            ResetForm();
+            await OnCreated.InvokeAsync();
+            await OnClose.InvokeAsync();
+        }
+        catch (Exception exception)
+        {
+            _errors.Add($"Unable to create loan product. {exception.Message}");
+        }
+        finally
+        {
+            _isSaving = false;
+        }
+    }
+}

@@ -1,5 +1,6 @@
 using LoanSuperMarket.Application.Features.LoanProducts.CreateLoanProduct;
 using LoanSuperMarket.Application.Features.LoanProducts.GetLoanProducts;
+using LoanSuperMarket.Application.Features.LoanProducts.GetLoanProductById;
 using LoanSuperMarket.Shared.Common;
 using LoanSuperMarket.Shared.LoanProducts;
 using MediatR;
@@ -50,5 +51,24 @@ public sealed class LoanProductsController : ControllerBase
             nameof(GetLoanProducts),
             new { id = loanProductId },
             ApiResponse<Guid>.Ok(loanProductId, "Loan product created successfully."));
+    }
+
+    [HttpGet("{id:guid}")]
+    public async Task<ActionResult<ApiResponse<LoanProductDto>>> GetLoanProductById(
+    Guid id,
+    CancellationToken cancellationToken)
+    {
+        var loanProduct = await _sender.Send(
+            new GetLoanProductByIdQuery(id),
+            cancellationToken);
+
+        if (loanProduct is null)
+        {
+            return NotFound(ApiResponse<LoanProductDto>.Fail("Loan product was not found."));
+        }
+
+        return Ok(ApiResponse<LoanProductDto>.Ok(
+            loanProduct,
+            "Loan product retrieved successfully."));
     }
 }

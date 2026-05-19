@@ -1,0 +1,121 @@
+<div class="rounded-2xl border border-slate-200 bg-white shadow-sm">
+    @if (!string.IsNullOrWhiteSpace(Title) || HeaderActions is not null)
+    {
+        <div class="flex flex-col gap-4 border-b border-slate-200 px-6 py-5 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+                @if (!string.IsNullOrWhiteSpace(Title))
+                {
+                    <h3 class="text-base font-semibold text-slate-900">
+                        @Title
+                    </h3>
+                }
+
+                @if (!string.IsNullOrWhiteSpace(Subtitle))
+                {
+                    <p class="mt-1 text-sm text-slate-500">
+                        @Subtitle
+                    </p>
+                }
+            </div>
+
+            @if (HeaderActions is not null)
+            {
+                <div>
+                    @HeaderActions
+                </div>
+            }
+        </div>
+    }
+
+    @if (IsLoading)
+    {
+        <div class="flex min-h-60 items-center justify-center">
+            <div class="text-center">
+                <div class="mx-auto h-10 w-10 animate-spin rounded-full border-4 border-blue-100 border-t-blue-600"></div>
+                <p class="mt-4 text-sm text-slate-500">
+                    @LoadingText
+                </p>
+            </div>
+        </div>
+    }
+    else if (IsEmpty)
+    {
+        <div class="flex min-h-60 flex-col items-center justify-center px-6 py-12 text-center">
+            <div class="text-5xl">
+                @EmptyIcon
+            </div>
+
+            <h3 class="mt-4 text-lg font-semibold text-slate-900">
+                @EmptyTitle
+            </h3>
+
+            @if (!string.IsNullOrWhiteSpace(EmptyMessage))
+            {
+                <p class="mt-2 max-w-md text-sm text-slate-500">
+                    @EmptyMessage
+                </p>
+            }
+
+            @if (EmptyActions is not null)
+            {
+                <div class="mt-6">
+                    @EmptyActions
+                </div>
+            }
+        </div>
+    }
+    else
+    {
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-slate-200">
+                <thead class="bg-slate-50">
+                    <tr>
+                        @HeaderTemplate
+                    </tr>
+                </thead>
+
+                <tbody class="divide-y divide-slate-100 bg-white">
+                    @RowTemplate
+                </tbody>
+            </table>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter]
+    public string? Title { get; set; }
+
+    [Parameter]
+    public string? Subtitle { get; set; }
+
+    [Parameter]
+    public bool IsLoading { get; set; }
+
+    [Parameter]
+    public bool IsEmpty { get; set; }
+
+    [Parameter]
+    public string LoadingText { get; set; } = "Loading records...";
+
+    [Parameter]
+    public string EmptyIcon { get; set; } = "📭";
+
+    [Parameter]
+    public string EmptyTitle { get; set; } = "No records found";
+
+    [Parameter]
+    public string? EmptyMessage { get; set; }
+
+    [Parameter]
+    public RenderFragment? HeaderActions { get; set; }
+
+    [Parameter]
+    public RenderFragment? EmptyActions { get; set; }
+
+    [Parameter]
+    public RenderFragment? HeaderTemplate { get; set; }
+
+    [Parameter]
+    public RenderFragment? RowTemplate { get; set; }
+}
