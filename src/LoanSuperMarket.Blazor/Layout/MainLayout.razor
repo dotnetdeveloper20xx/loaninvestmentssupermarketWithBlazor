@@ -1,0 +1,114 @@
+﻿@inherits LayoutComponentBase
+
+<div class="page-shell">
+    <div class="flex min-h-screen">
+        <aside class="hidden lg:flex lg:w-72 lg:flex-col bg-[#071A2F] text-white">
+            <div class="flex h-20 items-center px-6 border-b border-white/10">
+                <div>
+                    <div class="text-xl font-bold tracking-tight">
+                        Loan Super Market
+                    </div>
+                    <div class="text-xs text-blue-200 mt-1">
+                        Blazor Enterprise Platform
+                    </div>
+                </div>
+            </div>
+
+            <nav class="flex-1 px-4 py-6 space-y-1">
+                <NavLink href="" Match="NavLinkMatch.All"
+                         class="flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-blue-100 hover:bg-white/10"
+                         activeClass="bg-[#2563EB] text-white shadow-lg shadow-blue-900/30">
+                    <span>📊</span>
+                    <span>Dashboard</span>
+                </NavLink>
+
+                <NavLink href="loan-products"
+                         class="flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-blue-100 hover:bg-white/10"
+                         activeClass="bg-[#2563EB] text-white shadow-lg shadow-blue-900/30">
+                    <span>🏦</span>
+                    <span>Loan Products</span>
+                </NavLink>
+
+                <NavLink href="borrowers"
+                         class="flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-blue-100 hover:bg-white/10"
+                         activeClass="bg-[#2563EB] text-white shadow-lg shadow-blue-900/30">
+                    <span>👤</span>
+                    <span>Borrowers</span>
+                </NavLink>
+
+                <NavLink href="lenders"
+                         class="flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-blue-100 hover:bg-white/10"
+                         activeClass="bg-[#2563EB] text-white shadow-lg shadow-blue-900/30">
+                    <span>💼</span>
+                    <span>Lenders</span>
+                </NavLink>
+
+                <NavLink href="payments"
+                         class="flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-blue-100 hover:bg-white/10"
+                         activeClass="bg-[#2563EB] text-white shadow-lg shadow-blue-900/30">
+                    <span>💳</span>
+                    <span>Payments</span>
+                </NavLink>
+
+                <NavLink href="notifications"
+                         class="flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-blue-100 hover:bg-white/10"
+                         activeClass="bg-[#2563EB] text-white shadow-lg shadow-blue-900/30">
+                    <span>🔔</span>
+                    <span>Notifications</span>
+                </NavLink>
+
+                <NavLink href="admin"
+                         class="flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-blue-100 hover:bg-white/10"
+                         activeClass="bg-[#2563EB] text-white shadow-lg shadow-blue-900/30">
+                    <span>⚙️</span>
+                    <span>Admin</span>
+                </NavLink>
+            </nav>
+
+            <div class="p-4 border-t border-white/10">
+                <div class="rounded-2xl bg-white/10 p-4">
+                    <div class="text-sm font-semibold">Portfolio Build</div>
+                    <div class="text-xs text-blue-100 mt-1">
+                        Clean Architecture + Blazor WASM
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <div class="flex min-w-0 flex-1 flex-col">
+            <header class="h-20 border-b border-slate-200 bg-white px-6 flex items-center justify-between">
+                <div>
+                    <h1 class="text-xl font-semibold text-slate-900">
+                        Enterprise Loan Marketplace
+                    </h1>
+                    <p class="text-sm text-slate-500">
+                        Borrowers, lenders, products, payments and operations
+                    </p>
+                </div>
+
+                <div class="flex items-center gap-4">
+                    <button class="btn btn-ghost btn-circle">
+                        🔔
+                    </button>
+
+                    <div class="flex items-center gap-3">
+                        <div class="avatar placeholder">
+                            <div class="bg-primary text-primary-content rounded-full w-10">
+                                <span>AF</span>
+                            </div>
+                        </div>
+
+                        <div class="hidden sm:block">
+                            <div class="text-sm font-semibold text-slate-800">Afzal</div>
+                            <div class="text-xs text-slate-500">Senior .NET Developer</div>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <main class="flex-1 p-6 lg:p-8">
+                @Body
+            </main>
+        </div>
+    </div>
+</div>

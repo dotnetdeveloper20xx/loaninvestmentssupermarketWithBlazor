@@ -1,0 +1,32 @@
+<div class="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+    <div>
+        <h2 class="text-2xl font-bold tracking-tight text-slate-900">
+            @Title
+        </h2>
+
+        @if (!string.IsNullOrWhiteSpace(Subtitle))
+        {
+            <p class="mt-1 text-sm text-slate-500">
+                @Subtitle
+            </p>
+        }
+    </div>
+
+    @if (ActionContent is not null)
+    {
+        <div>
+            @ActionContent
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter]
+    public string Title { get; set; } = string.Empty;
+
+    [Parameter]
+    public string? Subtitle { get; set; }
+
+    [Parameter]
+    public RenderFragment? ActionContent { get; set; }
+}

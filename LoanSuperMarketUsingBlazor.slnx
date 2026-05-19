@@ -1,0 +1,15 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/LoanSuperMarket.Api/LoanSuperMarket.Api.csproj" />
+    <Project Path="src/LoanSuperMarket.Application/LoanSuperMarket.Application.csproj" />
+    <Project Path="src/LoanSuperMarket.Blazor/LoanSuperMarket.Blazor.csproj" />
+    <Project Path="src/LoanSuperMarket.Domain/LoanSuperMarket.Domain.csproj" />
+    <Project Path="src/LoanSuperMarket.Infrastructure/LoanSuperMarket.Infrastructure.csproj" />
+    <Project Path="src/LoanSuperMarket.Shared/LoanSuperMarket.Shared.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/LoanSuperMarket.Api.Tests/LoanSuperMarket.Api.Tests.csproj" />
+    <Project Path="tests/LoanSuperMarket.Application.Tests/LoanSuperMarket.Application.Tests.csproj" />
+    <Project Path="tests/LoanSuperMarket.Domain.Tests/LoanSuperMarket.Domain.Tests.csproj" />
+  </Folder>
+</Solution>
