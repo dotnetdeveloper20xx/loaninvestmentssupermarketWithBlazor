@@ -42,4 +42,30 @@ public sealed class LoanProductsApiClient
         return await response.Content.ReadFromJsonAsync<ApiResponse<Guid>>(
             cancellationToken);
     }
+
+    public async Task<ApiResponse<string>?> SubmitForApprovalAsync(
+        Guid id,
+        CancellationToken cancellationToken = default)
+    {
+        var response = await _httpClient.PostAsync(
+            $"api/loan-products/{id}/submit-for-approval",
+            content: null,
+            cancellationToken);
+
+        return await response.Content.ReadFromJsonAsync<ApiResponse<string>>(
+            cancellationToken);
+    }
+
+    public async Task<ApiResponse<string>?> ApproveAsync(
+        Guid id,
+        CancellationToken cancellationToken = default)
+    {
+        var response = await _httpClient.PostAsync(
+            $"api/loan-products/{id}/approve",
+            content: null,
+            cancellationToken);
+
+        return await response.Content.ReadFromJsonAsync<ApiResponse<string>>(
+            cancellationToken);
+    }
 }

@@ -1,6 +1,8 @@
+using LoanSuperMarket.Application.Features.LoanProducts.ApproveLoanProduct;
 using LoanSuperMarket.Application.Features.LoanProducts.CreateLoanProduct;
-using LoanSuperMarket.Application.Features.LoanProducts.GetLoanProducts;
 using LoanSuperMarket.Application.Features.LoanProducts.GetLoanProductById;
+using LoanSuperMarket.Application.Features.LoanProducts.GetLoanProducts;
+using LoanSuperMarket.Application.Features.LoanProducts.SubmitLoanProductForApproval;
 using LoanSuperMarket.Shared.Common;
 using LoanSuperMarket.Shared.LoanProducts;
 using MediatR;
@@ -70,5 +72,33 @@ public sealed class LoanProductsController : ControllerBase
         return Ok(ApiResponse<LoanProductDto>.Ok(
             loanProduct,
             "Loan product retrieved successfully."));
+    }
+
+    [HttpPost("{id:guid}/submit-for-approval")]
+    public async Task<ActionResult<ApiResponse<string>>> SubmitForApproval(
+    Guid id,
+    CancellationToken cancellationToken)
+    {
+        await _sender.Send(
+            new SubmitLoanProductForApprovalCommand(id),
+            cancellationToken);
+
+        return Ok(ApiResponse<string>.Ok(
+            "Loan product submitted for approval.",
+            "Workflow action completed."));
+    }
+
+    [HttpPost("{id:guid}/approve")]
+    public async Task<ActionResult<ApiResponse<string>>> Approve(
+    Guid id,
+    CancellationToken cancellationToken)
+    {
+        await _sender.Send(
+            new ApproveLoanProductCommand(id),
+            cancellationToken);
+
+        return Ok(ApiResponse<string>.Ok(
+            "Loan product approved.",
+            "Workflow action completed."));
     }
 }

@@ -18,7 +18,9 @@
         <div class="flex min-h-64 items-center justify-center">
             <div class="text-center">
                 <div class="mx-auto h-10 w-10 animate-spin rounded-full border-4 border-blue-100 border-t-blue-600"></div>
-                <p class="mt-4 text-sm text-slate-500">Loading loan product...</p>
+                <p class="mt-4 text-sm text-slate-500">
+                    Loading loan product...
+                </p>
             </div>
         </div>
     </AppCard>
@@ -93,17 +95,23 @@ else if (_loanProduct is not null)
                 <dl class="space-y-4 text-sm">
                     <div>
                         <dt class="font-medium text-slate-500">Product ID</dt>
-                        <dd class="mt-1 break-all font-mono text-xs text-slate-800">@_loanProduct.Id</dd>
+                        <dd class="mt-1 break-all font-mono text-xs text-slate-800">
+                            @_loanProduct.Id
+                        </dd>
                     </div>
 
                     <div>
                         <dt class="font-medium text-slate-500">Lender ID</dt>
-                        <dd class="mt-1 break-all font-mono text-xs text-slate-800">@_loanProduct.LenderId</dd>
+                        <dd class="mt-1 break-all font-mono text-xs text-slate-800">
+                            @_loanProduct.LenderId
+                        </dd>
                     </div>
 
                     <div>
                         <dt class="font-medium text-slate-500">Currency</dt>
-                        <dd class="mt-1 text-slate-800">@_loanProduct.Currency</dd>
+                        <dd class="mt-1 text-slate-800">
+                            @_loanProduct.Currency
+                        </dd>
                     </div>
 
                     <div>
@@ -116,14 +124,51 @@ else if (_loanProduct is not null)
             </AppCard>
 
             <AppCard Title="Workflow Actions"
-                     Subtitle="Planned operational controls">
+                     Subtitle="Operational controls for product lifecycle">
+
+                @if (!string.IsNullOrWhiteSpace(_workflowMessage))
+                {
+                    <div class="mb-4 rounded-xl border border-green-200 bg-green-50 p-3 text-sm text-green-700">
+                        @_workflowMessage
+                    </div>
+                }
+
+                @if (!string.IsNullOrWhiteSpace(_workflowError))
+                {
+                    <div class="mb-4 rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+                        @_workflowError
+                    </div>
+                }
+
                 <div class="space-y-3">
-                    <button class="w-full rounded-xl bg-blue-600 px-4 py-3 text-sm font-semibold text-white shadow-sm hover:bg-blue-700">
-                        Submit for Approval
+
+                    <button class="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-3 text-sm font-semibold text-white shadow-sm hover:bg-blue-700 disabled:opacity-60"
+                            @onclick="SubmitForApprovalAsync"
+                            disabled="@(_isSubmittingForApproval || _loanProduct.Status != "Draft")">
+
+                        @if (_isSubmittingForApproval)
+                        {
+                            <span class="h-4 w-4 animate-spin rounded-full border-2 border-blue-200 border-t-white"></span>
+                            <span>Submitting...</span>
+                        }
+                        else
+                        {
+                            <span>Submit for Approval</span>
+                        }
                     </button>
 
-                    <button class="w-full rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-sm font-semibold text-green-700 hover:bg-green-100">
-                        Approve Product
+                    <button class="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-sm font-semibold text-green-700 hover:bg-green-100 disabled:opacity-60"
+                            @onclick="ApproveAsync"
+                            disabled="@(_isApproving || _loanProduct.Status != "PendingApproval")">
+                        @if (_isApproving)
+                        {
+                            <span class="h-4 w-4 animate-spin rounded-full border-2 border-green-200 border-t-green-700"></span>
+                            <span>Approving...</span>
+                        }
+                        else
+                        {
+                            <span>Approve Product</span>
+                        }
                     </button>
 
                     <button class="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50">
@@ -144,8 +189,18 @@ else if (_loanProduct is not null)
     public Guid Id { get; set; }
 
     private LoanProductDto? _loanProduct;
+
     private bool _isLoading = true;
+
+    private bool _isSubmittingForApproval;
+
     private string? _errorMessage;
+
+    private string? _workflowMessage;
+
+    private string? _workflowError;
+
+    private bool _isApproving;
 
     protected override async Task OnParametersSetAsync()
     {
@@ -188,8 +243,100 @@ else if (_loanProduct is not null)
         }
     }
 
+    private async Task SubmitForApprovalAsync()
+    {
+        if (_loanProduct is null)
+        {
+            return;
+        }
+
+        _isSubmittingForApproval = true;
+        _workflowMessage = null;
+        _workflowError = null;
+
+        try
+        {
+            var response = await LoanProductsApiClient.SubmitForApprovalAsync(_loanProduct.Id);
+
+            if (response is null)
+            {
+                _workflowError = "No response received from the API.";
+                return;
+            }
+
+            if (!response.Success)
+            {
+                _workflowError = response.Errors.Count > 0
+                    ? string.Join(", ", response.Errors)
+                    : "Failed to submit loan product for approval.";
+
+                return;
+            }
+
+            _workflowMessage = response.Message
+                               ?? response.Data
+                               ?? "Loan product submitted for approval.";
+
+            await LoadLoanProductAsync();
+        }
+        catch (Exception exception)
+        {
+            _workflowError = $"Unable to submit loan product for approval. {exception.Message}";
+        }
+        finally
+        {
+            _isSubmittingForApproval = false;
+        }
+    }
+
     private void GoBack()
     {
         NavigationManager.NavigateTo("/loan-products");
+    }
+
+    private async Task ApproveAsync()
+    {
+        if (_loanProduct is null)
+        {
+            return;
+        }
+
+        _isApproving = true;
+        _workflowMessage = null;
+        _workflowError = null;
+
+        try
+        {
+            var response = await LoanProductsApiClient.ApproveAsync(_loanProduct.Id);
+
+            if (response is null)
+            {
+                _workflowError = "No response received from the API.";
+                return;
+            }
+
+            if (!response.Success)
+            {
+                _workflowError = response.Errors.Count > 0
+                    ? string.Join(", ", response.Errors)
+                    : "Failed to approve loan product.";
+
+                return;
+            }
+
+            _workflowMessage = response.Message
+                               ?? response.Data
+                               ?? "Loan product approved.";
+
+            await LoadLoanProductAsync();
+        }
+        catch (Exception exception)
+        {
+            _workflowError = $"Unable to approve loan product. {exception.Message}";
+        }
+        finally
+        {
+            _isApproving = false;
+        }
     }
 }
