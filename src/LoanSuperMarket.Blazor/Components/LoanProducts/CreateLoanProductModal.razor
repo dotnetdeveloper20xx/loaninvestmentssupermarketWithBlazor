@@ -12,18 +12,19 @@
                     </p>
                 </div>
 
-                <button class="rounded-full p-2 text-slate-400 hover:bg-slate-100 hover:text-slate-700"
+                <button type="button"
+                        class="rounded-full p-2 text-slate-400 hover:bg-slate-100 hover:text-slate-700"
                         @onclick="CloseAsync">
                     ✕
                 </button>
             </div>
 
-            @if (_errors.Count > 0)
+            @if (_apiErrors.Count > 0)
             {
                 <div class="mt-6 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
                     <strong>Unable to create product</strong>
                     <ul class="mt-2 list-disc pl-5">
-                        @foreach (var error in _errors)
+                        @foreach (var error in _apiErrors)
                         {
                             <li>@error</li>
                         }
@@ -31,69 +32,138 @@
                 </div>
             }
 
-            <div class="mt-8 grid grid-cols-1 gap-5 md:grid-cols-2">
-                <div class="md:col-span-2">
-                    <label class="mb-2 block text-sm font-semibold text-slate-700">Product title</label>
-                    <input class="@InputClass" @bind="_model.Title" placeholder="Prime Personal Loan" />
+            <EditForm Model="_model" OnValidSubmit="CreateAsync">
+                <DataAnnotationsValidator />
+
+                <ValidationSummary class="mt-6 rounded-2xl border border-orange-200 bg-orange-50 p-4 text-sm text-orange-700" />
+
+                <div class="mt-8 grid grid-cols-1 gap-5 md:grid-cols-2">
+                    <div class="md:col-span-2">
+                        <label class="mb-2 block text-sm font-semibold text-slate-700">
+                            Product title
+                        </label>
+
+                        <InputText class="@InputClass"
+                                   @bind-Value="_model.Title"
+                                   placeholder="Prime Personal Loan" />
+
+                        <ValidationMessage For="@(() => _model.Title)"
+                                           class="mt-2 text-sm text-red-600" />
+                    </div>
+
+                    <div class="md:col-span-2">
+                        <label class="mb-2 block text-sm font-semibold text-slate-700">
+                            Description
+                        </label>
+
+                        <InputTextArea class="@TextAreaClass"
+                                       @bind-Value="_model.Description"
+                                       placeholder="Describe who this product is suitable for..." />
+
+                        <ValidationMessage For="@(() => _model.Description)"
+                                           class="mt-2 text-sm text-red-600" />
+                    </div>
+
+                    <div>
+                        <label class="mb-2 block text-sm font-semibold text-slate-700">
+                            Minimum amount
+                        </label>
+
+                        <InputNumber class="@InputClass"
+                                     @bind-Value="_model.MinimumAmount" />
+
+                        <ValidationMessage For="@(() => _model.MinimumAmount)"
+                                           class="mt-2 text-sm text-red-600" />
+                    </div>
+
+                    <div>
+                        <label class="mb-2 block text-sm font-semibold text-slate-700">
+                            Maximum amount
+                        </label>
+
+                        <InputNumber class="@InputClass"
+                                     @bind-Value="_model.MaximumAmount" />
+
+                        <ValidationMessage For="@(() => _model.MaximumAmount)"
+                                           class="mt-2 text-sm text-red-600" />
+                    </div>
+
+                    <div>
+                        <label class="mb-2 block text-sm font-semibold text-slate-700">
+                            Interest rate %
+                        </label>
+
+                        <InputNumber class="@InputClass"
+                                     @bind-Value="_model.InterestRate" />
+
+                        <ValidationMessage For="@(() => _model.InterestRate)"
+                                           class="mt-2 text-sm text-red-600" />
+                    </div>
+
+                    <div>
+                        <label class="mb-2 block text-sm font-semibold text-slate-700">
+                            Lender ID
+                        </label>
+
+                        <InputText class="@InputClass"
+                                   @bind-Value="_lenderIdText" />
+
+                        @if (!string.IsNullOrWhiteSpace(_lenderIdError))
+                        {
+                            <p class="mt-2 text-sm text-red-600">
+                                @_lenderIdError
+                            </p>
+                        }
+                    </div>
+
+                    <div>
+                        <label class="mb-2 block text-sm font-semibold text-slate-700">
+                            Minimum term months
+                        </label>
+
+                        <InputNumber class="@InputClass"
+                                     @bind-Value="_model.MinimumTermMonths" />
+
+                        <ValidationMessage For="@(() => _model.MinimumTermMonths)"
+                                           class="mt-2 text-sm text-red-600" />
+                    </div>
+
+                    <div>
+                        <label class="mb-2 block text-sm font-semibold text-slate-700">
+                            Maximum term months
+                        </label>
+
+                        <InputNumber class="@InputClass"
+                                     @bind-Value="_model.MaximumTermMonths" />
+
+                        <ValidationMessage For="@(() => _model.MaximumTermMonths)"
+                                           class="mt-2 text-sm text-red-600" />
+                    </div>
                 </div>
 
-                <div class="md:col-span-2">
-                    <label class="mb-2 block text-sm font-semibold text-slate-700">Description</label>
-                    <textarea class="@TextAreaClass" @bind="_model.Description" placeholder="Describe who this product is suitable for..."></textarea>
+                <div class="mt-8 flex justify-end gap-3 border-t border-slate-200 pt-5">
+                    <button type="button"
+                            class="rounded-xl px-5 py-3 text-sm font-semibold text-slate-600 hover:bg-slate-100"
+                            @onclick="CloseAsync"
+                            disabled="@_isSaving">
+                        Cancel
+                    </button>
+
+                    <button type="submit"
+                            class="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-5 py-3 text-sm font-semibold text-white shadow-sm hover:bg-blue-700 disabled:opacity-60"
+                            disabled="@_isSaving">
+                        @if (_isSaving)
+                        {
+                            <span class="h-4 w-4 animate-spin rounded-full border-2 border-blue-200 border-t-white"></span>
+                            <span>Saving...</span>
+                        }
+                        else
+                        {
+                            <span>Create Product</span>
+                        }
+                    </button>
                 </div>
-
-                <div>
-                    <label class="mb-2 block text-sm font-semibold text-slate-700">Minimum amount</label>
-                    <input type="number" class="@InputClass" @bind="_model.MinimumAmount" />
-                </div>
-
-                <div>
-                    <label class="mb-2 block text-sm font-semibold text-slate-700">Maximum amount</label>
-                    <input type="number" class="@InputClass" @bind="_model.MaximumAmount" />
-                </div>
-
-                <div>
-                    <label class="mb-2 block text-sm font-semibold text-slate-700">Interest rate %</label>
-                    <input type="number" step="0.01" class="@InputClass" @bind="_model.InterestRate" />
-                </div>
-
-                <div>
-                    <label class="mb-2 block text-sm font-semibold text-slate-700">Lender ID</label>
-                    <input class="@InputClass" @bind="_lenderIdText" />
-                </div>
-
-                <div>
-                    <label class="mb-2 block text-sm font-semibold text-slate-700">Minimum term months</label>
-                    <input type="number" class="@InputClass" @bind="_model.MinimumTermMonths" />
-                </div>
-
-                <div>
-                    <label class="mb-2 block text-sm font-semibold text-slate-700">Maximum term months</label>
-                    <input type="number" class="@InputClass" @bind="_model.MaximumTermMonths" />
-                </div>
-            </div>
-
-            <div class="mt-8 flex justify-end gap-3 border-t border-slate-200 pt-5">
-                <button class="rounded-xl px-5 py-3 text-sm font-semibold text-slate-600 hover:bg-slate-100"
-                        @onclick="CloseAsync"
-                        disabled="@_isSaving">
-                    Cancel
-                </button>
-
-                <button class="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-5 py-3 text-sm font-semibold text-white shadow-sm hover:bg-blue-700 disabled:opacity-60"
-                        @onclick="CreateAsync"
-                        disabled="@_isSaving">
-                    @if (_isSaving)
-                    {
-                        <span class="h-4 w-4 animate-spin rounded-full border-2 border-blue-200 border-t-white"></span>
-                        <span>Saving...</span>
-                    }
-                    else
-                    {
-                        <span>Create Product</span>
-                    }
-                </button>
-            </div>
+            </EditForm>
         </div>
     </div>
 }
@@ -105,9 +175,14 @@
     private const string TextAreaClass =
         "min-h-32 w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-100";
 
-    private readonly List<string> _errors = [];
+    private readonly List<string> _apiErrors = [];
+
     private CreateLoanProductRequest _model = new();
+
     private string _lenderIdText = "11111111-1111-1111-1111-111111111111";
+
+    private string? _lenderIdError;
+
     private bool _isSaving;
 
     [Parameter]
@@ -129,7 +204,8 @@
 
     private void ResetForm()
     {
-        _errors.Clear();
+        _apiErrors.Clear();
+        _lenderIdError = null;
 
         _model = new CreateLoanProductRequest
         {
@@ -157,11 +233,12 @@
 
     private async Task CreateAsync()
     {
-        _errors.Clear();
+        _apiErrors.Clear();
+        _lenderIdError = null;
 
         if (!Guid.TryParse(_lenderIdText, out var lenderId))
         {
-            _errors.Add("Lender ID must be a valid GUID.");
+            _lenderIdError = "Lender ID must be a valid GUID.";
             return;
         }
 
@@ -174,13 +251,13 @@
 
             if (response is null)
             {
-                _errors.Add("No response received from the API.");
+                _apiErrors.Add("No response received from the API.");
                 return;
             }
 
             if (!response.Success)
             {
-                _errors.AddRange(response.Errors.Count > 0
+                _apiErrors.AddRange(response.Errors.Count > 0
                     ? response.Errors
                     : ["Failed to create loan product."]);
 
@@ -193,7 +270,7 @@
         }
         catch (Exception exception)
         {
-            _errors.Add($"Unable to create loan product. {exception.Message}");
+            _apiErrors.Add($"Unable to create loan product. {exception.Message}");
         }
         finally
         {
