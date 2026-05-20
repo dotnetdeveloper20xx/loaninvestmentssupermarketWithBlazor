@@ -1,0 +1,107 @@
+@implements IDisposable
+@inject ModalService ModalService
+
+@if (ModalService.CurrentConfirmation is not null)
+{
+    var modal = ModalService.CurrentConfirmation;
+
+    <div class="fixed inset-0 z-[90] flex items-center justify-center bg-slate-900/60 px-4 backdrop-blur-sm">
+        <div @key="modal.Id"
+             class="w-full max-w-lg rounded-2xl bg-white p-6 shadow-2xl">
+            <div class="flex items-start gap-4">
+                <div class="@GetIconWrapperClass(modal.Intent)">
+                    @GetIcon(modal.Intent)
+                </div>
+
+                <div class="min-w-0 flex-1">
+                    <h3 class="text-xl font-bold text-slate-900">
+                        @modal.Title
+                    </h3>
+
+                    <p class="mt-3 text-sm leading-6 text-slate-600">
+                        @modal.Message
+                    </p>
+                </div>
+            </div>
+
+            <div class="mt-8 flex justify-end gap-3 border-t border-slate-200 pt-5">
+                <button type="button"
+                        class="rounded-xl px-5 py-3 text-sm font-semibold text-slate-600 hover:bg-slate-100 disabled:opacity-60"
+                        disabled="@modal.IsProcessing"
+                        @onclick="ModalService.Close">
+                    @modal.CancelText
+                </button>
+
+                <button type="button"
+                        class="@GetConfirmButtonClass(modal.Intent)"
+                        disabled="@modal.IsProcessing"
+                        @onclick="ModalService.ConfirmAsync">
+                    @if (modal.IsProcessing)
+                    {
+                        <span class="h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white"></span>
+                        <span>Working...</span>
+                    }
+                    else
+                    {
+                        <span>@modal.ConfirmText</span>
+                    }
+                </button>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    protected override void OnInitialized()
+    {
+        ModalService.OnChange += HandleModalChanged;
+    }
+
+    private void HandleModalChanged()
+    {
+        _ = InvokeAsync(StateHasChanged);
+    }
+
+    private static string GetIconWrapperClass(ModalIntent intent)
+    {
+        return intent switch
+        {
+            ModalIntent.Success => "flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-green-50 text-2xl text-green-700",
+            ModalIntent.Warning => "flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-amber-50 text-2xl text-amber-700",
+            ModalIntent.Danger => "flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-red-50 text-2xl text-red-700",
+            _ => "flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-blue-50 text-2xl text-blue-700"
+        };
+    }
+
+    private static string GetIcon(ModalIntent intent)
+    {
+        return intent switch
+        {
+            ModalIntent.Success => "✅",
+            ModalIntent.Warning => "⚠️",
+            ModalIntent.Danger => "🛑",
+            _ => "ℹ️"
+        };
+    }
+
+    private static string GetConfirmButtonClass(ModalIntent intent)
+    {
+        var baseClass =
+            "inline-flex items-center justify-center gap-2 rounded-xl px-5 py-3 text-sm font-semibold text-white shadow-sm disabled:opacity-60";
+
+        var colorClass = intent switch
+        {
+            ModalIntent.Success => " bg-green-600 hover:bg-green-700",
+            ModalIntent.Warning => " bg-amber-600 hover:bg-amber-700",
+            ModalIntent.Danger => " bg-red-600 hover:bg-red-700",
+            _ => " bg-blue-600 hover:bg-blue-700"
+        };
+
+        return baseClass + colorClass;
+    }
+
+    public void Dispose()
+    {
+        ModalService.OnChange -= HandleModalChanged;
+    }
+}

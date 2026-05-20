@@ -1,6 +1,7 @@
 @page "/loan-applications"
 @inject LoanApplicationsApiClient LoanApplicationsApiClient
 @inject ToastService ToastService
+@inject ModalService ModalService
 
 <PageHeader Title="Loan Applications"
             Subtitle="Manage borrower applications, review status and funding pipeline.">
@@ -139,25 +140,25 @@
                     <div class="flex justify-end gap-2">
                         <button class="rounded-lg border border-purple-200 px-3 py-2 text-xs font-semibold text-purple-700 hover:bg-purple-50 disabled:opacity-50"
                                 disabled="@(_activeWorkflowId == application.Id || application.Status != "Submitted")"
-                                @onclick="() => MarkUnderReviewAsync(application.Id)">
+                                @onclick="() => ConfirmReview(application.Id)">
                             Review
                         </button>
 
                         <button class="rounded-lg border border-green-200 px-3 py-2 text-xs font-semibold text-green-700 hover:bg-green-50 disabled:opacity-50"
                                 disabled="@(_activeWorkflowId == application.Id || application.Status != "UnderReview")"
-                                @onclick="() => ApproveAsync(application.Id)">
+                                @onclick="() => ConfirmApprove(application.Id)">
                             Approve
                         </button>
 
                         <button class="rounded-lg border border-red-200 px-3 py-2 text-xs font-semibold text-red-700 hover:bg-red-50 disabled:opacity-50"
                                 disabled="@(_activeWorkflowId == application.Id || application.Status is "Approved" or "Funded" or "Rejected")"
-                                @onclick="() => RejectAsync(application.Id)">
+                                @onclick="() => ConfirmReject(application.Id)">
                             Reject
                         </button>
 
                         <button class="rounded-lg border border-blue-200 px-3 py-2 text-xs font-semibold text-blue-700 hover:bg-blue-50 disabled:opacity-50"
                                 disabled="@(_activeWorkflowId == application.Id || application.Status != "Approved")"
-                                @onclick="() => FundAsync(application.Id)">
+                                @onclick="() => ConfirmFund(application.Id)">
                             Fund
                         </button>
                     </div>
@@ -289,6 +290,54 @@
     private async Task FundAsync(Guid id)
     {
         await RunWorkflowAsync(id, "fund");
+    }
+
+    private void ConfirmReview(Guid id)
+    {
+        ModalService.ShowConfirmation(new ConfirmationModalRequest
+        {
+            Title = "Move application under review?",
+            Message = "This will move the loan application into the underwriting review stage.",
+            ConfirmText = "Move to Review",
+            Intent = ModalIntent.Info,
+            OnConfirmAsync = async () => await MarkUnderReviewAsync(id)
+        });
+    }
+
+    private void ConfirmApprove(Guid id)
+    {
+        ModalService.ShowConfirmation(new ConfirmationModalRequest
+        {
+            Title = "Approve this application?",
+            Message = "This will approve the loan application and make it eligible for funding.",
+            ConfirmText = "Approve",
+            Intent = ModalIntent.Success,
+            OnConfirmAsync = async () => await ApproveAsync(id)
+        });
+    }
+
+    private void ConfirmReject(Guid id)
+    {
+        ModalService.ShowConfirmation(new ConfirmationModalRequest
+        {
+            Title = "Reject this application?",
+            Message = "This action will reject the loan application.",
+            ConfirmText = "Reject",
+            Intent = ModalIntent.Danger,
+            OnConfirmAsync = async () => await RejectAsync(id)
+        });
+    }
+
+    private void ConfirmFund(Guid id)
+    {
+        ModalService.ShowConfirmation(new ConfirmationModalRequest
+        {
+            Title = "Fund this application?",
+            Message = "This will mark the approved application as funded.",
+            ConfirmText = "Fund Application",
+            Intent = ModalIntent.Warning,
+            OnConfirmAsync = async () => await FundAsync(id)
+        });
     }
 
     private async Task RunWorkflowAsync(Guid id, string action)

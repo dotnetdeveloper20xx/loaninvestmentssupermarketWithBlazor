@@ -1,8 +1,9 @@
 using LoanSuperMarket.Blazor;
 using LoanSuperMarket.Blazor.Services.ApiClients;
+using LoanSuperMarket.Blazor.Services.Modals;
+using LoanSuperMarket.Blazor.Services.Notifications;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
-using LoanSuperMarket.Blazor.Services.Notifications;
 
 
 var builder = WebAssemblyHostBuilder.CreateDefault(args);
@@ -27,5 +28,6 @@ builder.Services.AddScoped<LendersApiClient>();
 builder.Services.AddScoped<LoanApplicationsApiClient>();
 builder.Services.AddScoped<DashboardApiClient>();
 builder.Services.AddScoped<ToastService>();
+builder.Services.AddScoped<ModalService>();
 
 await builder.Build().RunAsync();

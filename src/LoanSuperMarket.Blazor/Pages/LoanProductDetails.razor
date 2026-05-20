@@ -1,6 +1,8 @@
 @page "/loan-products/{Id:guid}"
 @inject LoanProductsApiClient LoanProductsApiClient
 @inject NavigationManager NavigationManager
+@inject ToastService ToastService
+@inject ModalService ModalService
 
 <PageHeader Title="Loan Product Details"
             Subtitle="Review product configuration, marketplace status and lending criteria.">
@@ -18,9 +20,7 @@
         <div class="flex min-h-64 items-center justify-center">
             <div class="text-center">
                 <div class="mx-auto h-10 w-10 animate-spin rounded-full border-4 border-blue-100 border-t-blue-600"></div>
-                <p class="mt-4 text-sm text-slate-500">
-                    Loading loan product...
-                </p>
+                <p class="mt-4 text-sm text-slate-500">Loading loan product...</p>
             </div>
         </div>
     </AppCard>
@@ -76,13 +76,12 @@ else if (_loanProduct is not null)
                          Subtitle="Future workflow actions will appear here.">
                     <div class="space-y-4 text-sm text-slate-600">
                         <p>
-                            This section is designed for future enterprise workflow actions such as approval,
+                            This section is designed for enterprise workflow actions such as approval,
                             publishing, archiving, risk review and audit history.
                         </p>
 
                         <div class="rounded-2xl border border-blue-100 bg-blue-50 p-4 text-blue-700">
-                            This product currently exists as a marketplace product record. Later, admin users will be able
-                            to move it through approval and publishing workflows.
+                            Workflow actions are protected through backend CQRS commands and domain state transitions.
                         </div>
                     </div>
                 </AppCard>
@@ -95,23 +94,17 @@ else if (_loanProduct is not null)
                 <dl class="space-y-4 text-sm">
                     <div>
                         <dt class="font-medium text-slate-500">Product ID</dt>
-                        <dd class="mt-1 break-all font-mono text-xs text-slate-800">
-                            @_loanProduct.Id
-                        </dd>
+                        <dd class="mt-1 break-all font-mono text-xs text-slate-800">@_loanProduct.Id</dd>
                     </div>
 
                     <div>
                         <dt class="font-medium text-slate-500">Lender ID</dt>
-                        <dd class="mt-1 break-all font-mono text-xs text-slate-800">
-                            @_loanProduct.LenderId
-                        </dd>
+                        <dd class="mt-1 break-all font-mono text-xs text-slate-800">@_loanProduct.LenderId</dd>
                     </div>
 
                     <div>
                         <dt class="font-medium text-slate-500">Currency</dt>
-                        <dd class="mt-1 text-slate-800">
-                            @_loanProduct.Currency
-                        </dd>
+                        <dd class="mt-1 text-slate-800">@_loanProduct.Currency</dd>
                     </div>
 
                     <div>
@@ -141,11 +134,9 @@ else if (_loanProduct is not null)
                 }
 
                 <div class="space-y-3">
-
                     <button class="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-3 text-sm font-semibold text-white shadow-sm hover:bg-blue-700 disabled:opacity-60"
-                            @onclick="SubmitForApprovalAsync"
+                            @onclick="ConfirmSubmitForApproval"
                             disabled="@(_isSubmittingForApproval || _loanProduct.Status != "Draft")">
-
                         @if (_isSubmittingForApproval)
                         {
                             <span class="h-4 w-4 animate-spin rounded-full border-2 border-blue-200 border-t-white"></span>
@@ -158,7 +149,7 @@ else if (_loanProduct is not null)
                     </button>
 
                     <button class="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-sm font-semibold text-green-700 hover:bg-green-100 disabled:opacity-60"
-                            @onclick="ApproveAsync"
+                            @onclick="ConfirmApprove"
                             disabled="@(_isApproving || _loanProduct.Status != "PendingApproval")">
                         @if (_isApproving)
                         {
@@ -172,7 +163,7 @@ else if (_loanProduct is not null)
                     </button>
 
                     <button class="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-60"
-                            @onclick="PublishAsync"
+                            @onclick="ConfirmPublish"
                             disabled="@(_isPublishing || _loanProduct.Status != "Approved")">
                         @if (_isPublishing)
                         {
@@ -186,7 +177,7 @@ else if (_loanProduct is not null)
                     </button>
 
                     <button class="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700 hover:bg-red-100 disabled:opacity-60"
-                            @onclick="ArchiveAsync"
+                            @onclick="ConfirmArchive"
                             disabled="@(_isArchiving || _loanProduct.Status == "Archived")">
                         @if (_isArchiving)
                         {
@@ -209,22 +200,14 @@ else if (_loanProduct is not null)
     public Guid Id { get; set; }
 
     private LoanProductDto? _loanProduct;
-
     private bool _isLoading = true;
-
     private bool _isSubmittingForApproval;
-
-    private string? _errorMessage;
-
-    private string? _workflowMessage;
-
-    private string? _workflowError;
-
     private bool _isApproving;
-
     private bool _isPublishing;
-
     private bool _isArchiving;
+    private string? _errorMessage;
+    private string? _workflowMessage;
+    private string? _workflowError;
 
     protected override async Task OnParametersSetAsync()
     {
@@ -267,6 +250,54 @@ else if (_loanProduct is not null)
         }
     }
 
+    private void ConfirmSubmitForApproval()
+    {
+        ModalService.ShowConfirmation(new ConfirmationModalRequest
+        {
+            Title = "Submit product for approval?",
+            Message = "This will move the loan product from Draft into the approval workflow.",
+            ConfirmText = "Submit",
+            Intent = ModalIntent.Info,
+            OnConfirmAsync = SubmitForApprovalAsync
+        });
+    }
+
+    private void ConfirmApprove()
+    {
+        ModalService.ShowConfirmation(new ConfirmationModalRequest
+        {
+            Title = "Approve this product?",
+            Message = "This will approve the loan product and make it ready for publishing.",
+            ConfirmText = "Approve",
+            Intent = ModalIntent.Success,
+            OnConfirmAsync = ApproveAsync
+        });
+    }
+
+    private void ConfirmPublish()
+    {
+        ModalService.ShowConfirmation(new ConfirmationModalRequest
+        {
+            Title = "Publish this product?",
+            Message = "This will publish the approved product and make it available for loan applications.",
+            ConfirmText = "Publish",
+            Intent = ModalIntent.Warning,
+            OnConfirmAsync = PublishAsync
+        });
+    }
+
+    private void ConfirmArchive()
+    {
+        ModalService.ShowConfirmation(new ConfirmationModalRequest
+        {
+            Title = "Archive this product?",
+            Message = "This will archive the product and remove it from active operational workflows.",
+            ConfirmText = "Archive",
+            Intent = ModalIntent.Danger,
+            OnConfirmAsync = ArchiveAsync
+        });
+    }
+
     private async Task SubmitForApprovalAsync()
     {
         if (_loanProduct is null)
@@ -275,47 +306,18 @@ else if (_loanProduct is not null)
         }
 
         _isSubmittingForApproval = true;
-        _workflowMessage = null;
-        _workflowError = null;
 
         try
         {
-            var response = await LoanProductsApiClient.SubmitForApprovalAsync(_loanProduct.Id);
-
-            if (response is null)
-            {
-                _workflowError = "No response received from the API.";
-                return;
-            }
-
-            if (!response.Success)
-            {
-                _workflowError = response.Errors.Count > 0
-                    ? string.Join(", ", response.Errors)
-                    : "Failed to submit loan product for approval.";
-
-                return;
-            }
-
-            _workflowMessage = response.Message
-                               ?? response.Data
-                               ?? "Loan product submitted for approval.";
-
-            await LoadLoanProductAsync();
-        }
-        catch (Exception exception)
-        {
-            _workflowError = $"Unable to submit loan product for approval. {exception.Message}";
+            await RunWorkflowAsync(
+                "submit",
+                "Loan product submitted for approval.",
+                "Failed to submit loan product for approval.");
         }
         finally
         {
             _isSubmittingForApproval = false;
         }
-    }
-
-    private void GoBack()
-    {
-        NavigationManager.NavigateTo("/loan-products");
     }
 
     private async Task ApproveAsync()
@@ -326,37 +328,13 @@ else if (_loanProduct is not null)
         }
 
         _isApproving = true;
-        _workflowMessage = null;
-        _workflowError = null;
 
         try
         {
-            var response = await LoanProductsApiClient.ApproveAsync(_loanProduct.Id);
-
-            if (response is null)
-            {
-                _workflowError = "No response received from the API.";
-                return;
-            }
-
-            if (!response.Success)
-            {
-                _workflowError = response.Errors.Count > 0
-                    ? string.Join(", ", response.Errors)
-                    : "Failed to approve loan product.";
-
-                return;
-            }
-
-            _workflowMessage = response.Message
-                               ?? response.Data
-                               ?? "Loan product approved.";
-
-            await LoadLoanProductAsync();
-        }
-        catch (Exception exception)
-        {
-            _workflowError = $"Unable to approve loan product. {exception.Message}";
+            await RunWorkflowAsync(
+                "approve",
+                "Loan product approved.",
+                "Failed to approve loan product.");
         }
         finally
         {
@@ -372,37 +350,13 @@ else if (_loanProduct is not null)
         }
 
         _isPublishing = true;
-        _workflowMessage = null;
-        _workflowError = null;
 
         try
         {
-            var response = await LoanProductsApiClient.PublishAsync(_loanProduct.Id);
-
-            if (response is null)
-            {
-                _workflowError = "No response received from the API.";
-                return;
-            }
-
-            if (!response.Success)
-            {
-                _workflowError = response.Errors.Count > 0
-                    ? string.Join(", ", response.Errors)
-                    : "Failed to publish loan product.";
-
-                return;
-            }
-
-            _workflowMessage = response.Message
-                               ?? response.Data
-                               ?? "Loan product published.";
-
-            await LoadLoanProductAsync();
-        }
-        catch (Exception exception)
-        {
-            _workflowError = $"Unable to publish loan product. {exception.Message}";
+            await RunWorkflowAsync(
+                "publish",
+                "Loan product published.",
+                "Failed to publish loan product.");
         }
         finally
         {
@@ -418,41 +372,86 @@ else if (_loanProduct is not null)
         }
 
         _isArchiving = true;
-        _workflowMessage = null;
-        _workflowError = null;
 
         try
         {
-            var response = await LoanProductsApiClient.ArchiveAsync(_loanProduct.Id);
-
-            if (response is null)
-            {
-                _workflowError = "No response received from the API.";
-                return;
-            }
-
-            if (!response.Success)
-            {
-                _workflowError = response.Errors.Count > 0
-                    ? string.Join(", ", response.Errors)
-                    : "Failed to archive loan product.";
-
-                return;
-            }
-
-            _workflowMessage = response.Message
-                               ?? response.Data
-                               ?? "Loan product archived.";
-
-            await LoadLoanProductAsync();
-        }
-        catch (Exception exception)
-        {
-            _workflowError = $"Unable to archive loan product. {exception.Message}";
+            await RunWorkflowAsync(
+                "archive",
+                "Loan product archived.",
+                "Failed to archive loan product.");
         }
         finally
         {
             _isArchiving = false;
         }
+    }
+
+    private async Task RunWorkflowAsync(
+     string action,
+     string fallbackSuccessMessage,
+     string fallbackErrorMessage)
+    {
+        if (_loanProduct is null)
+        {
+            return;
+        }
+
+        _workflowMessage = null;
+        _workflowError = null;
+
+        try
+        {
+            var response = action switch
+            {
+                "submit" => await LoanProductsApiClient.SubmitForApprovalAsync(_loanProduct.Id),
+                "approve" => await LoanProductsApiClient.ApproveAsync(_loanProduct.Id),
+                "publish" => await LoanProductsApiClient.PublishAsync(_loanProduct.Id),
+                "archive" => await LoanProductsApiClient.ArchiveAsync(_loanProduct.Id),
+                _ => null
+            };
+
+            if (response is null)
+            {
+                const string errorMessage = "No response received from the API.";
+
+                _workflowError = errorMessage;
+                ToastService.ShowError("Workflow failed", errorMessage);
+
+                return;
+            }
+
+            if (!response.Success)
+            {
+                var errorMessage = response.Errors.Count > 0
+                    ? string.Join(", ", response.Errors)
+                    : fallbackErrorMessage;
+
+                _workflowError = errorMessage;
+                ToastService.ShowError("Workflow failed", errorMessage);
+
+                return;
+            }
+
+            var successMessage = response.Message
+                                 ?? response.Data
+                                 ?? fallbackSuccessMessage;
+
+            _workflowMessage = successMessage;
+            ToastService.ShowSuccess("Workflow completed", successMessage);
+
+            await LoadLoanProductAsync();
+        }
+        catch (Exception exception)
+        {
+            var errorMessage = $"{fallbackErrorMessage} {exception.Message}";
+
+            _workflowError = errorMessage;
+            ToastService.ShowError("Workflow failed", errorMessage);
+        }
+    }
+
+    private void GoBack()
+    {
+        NavigationManager.NavigateTo("/loan-products");
     }
 }
