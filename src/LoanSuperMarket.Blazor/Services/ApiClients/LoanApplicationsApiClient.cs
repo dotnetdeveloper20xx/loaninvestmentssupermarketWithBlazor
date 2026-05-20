@@ -33,4 +33,56 @@ public sealed class LoanApplicationsApiClient
         return await response.Content.ReadFromJsonAsync<ApiResponse<Guid>>(
             cancellationToken);
     }
+
+    public async Task<ApiResponse<string>?> MarkUnderReviewAsync(
+    Guid id,
+    CancellationToken cancellationToken = default)
+    {
+        var response = await _httpClient.PostAsync(
+            $"api/loan-applications/{id}/mark-under-review",
+            content: null,
+            cancellationToken);
+
+        return await response.Content.ReadFromJsonAsync<ApiResponse<string>>(
+            cancellationToken);
+    }
+
+    public async Task<ApiResponse<string>?> ApproveAsync(
+        Guid id,
+        CancellationToken cancellationToken = default)
+    {
+        var response = await _httpClient.PostAsync(
+            $"api/loan-applications/{id}/approve",
+            content: null,
+            cancellationToken);
+
+        return await response.Content.ReadFromJsonAsync<ApiResponse<string>>(
+            cancellationToken);
+    }
+
+    public async Task<ApiResponse<string>?> RejectAsync(
+        Guid id,
+        CancellationToken cancellationToken = default)
+    {
+        var response = await _httpClient.PostAsync(
+            $"api/loan-applications/{id}/reject",
+            content: null,
+            cancellationToken);
+
+        return await response.Content.ReadFromJsonAsync<ApiResponse<string>>(
+            cancellationToken);
+    }
+
+    public async Task<ApiResponse<string>?> FundAsync(
+        Guid id,
+        CancellationToken cancellationToken = default)
+    {
+        var response = await _httpClient.PostAsync(
+            $"api/loan-applications/{id}/fund",
+            content: null,
+            cancellationToken);
+
+        return await response.Content.ReadFromJsonAsync<ApiResponse<string>>(
+            cancellationToken);
+    }
 }

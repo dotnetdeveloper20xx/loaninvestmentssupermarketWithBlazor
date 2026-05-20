@@ -23,5 +23,6 @@ builder.Services.AddScoped<LoanProductsApiClient>();
 builder.Services.AddScoped<BorrowersApiClient>();
 builder.Services.AddScoped<LendersApiClient>();
 builder.Services.AddScoped<LoanApplicationsApiClient>();
+builder.Services.AddScoped<DashboardApiClient>();
 
 await builder.Build().RunAsync();

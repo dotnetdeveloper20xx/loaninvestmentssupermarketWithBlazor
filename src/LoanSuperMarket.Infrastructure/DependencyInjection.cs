@@ -28,6 +28,8 @@ public static class DependencyInjection
 
         services.AddScoped<ILoanApplicationRepository, LoanApplicationRepository>();
 
+        services.AddScoped<IDashboardRepository, DashboardRepository>();
+
         return services;
     }
 }

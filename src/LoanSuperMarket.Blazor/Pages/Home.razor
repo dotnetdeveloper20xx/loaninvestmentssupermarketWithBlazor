@@ -1,151 +1,177 @@
 ﻿@page "/"
+@inject DashboardApiClient DashboardApiClient
 
-<PageHeader Title="Dashboard"
-            Subtitle="Executive overview of loan products, borrowers, applications and payments.">
-    <ActionContent>
-        <button class="btn btn-primary">
-            + New Loan Product
-        </button>
-    </ActionContent>
-</PageHeader>
+<PageHeader Title="Enterprise Dashboard"
+            Subtitle="Operational lending marketplace analytics and workflow overview." />
 
-<div class="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-4">
-    <DashboardMetricCard Title="Loan Products"
-                         Value="24"
-                         Description="Products available to borrowers"
-                         Icon="🏦"
-                         Colour="blue"
-                         Trend="+4 this month" />
-
-    <DashboardMetricCard Title="Active Borrowers"
-                         Value="1,284"
-                         Description="Verified borrower accounts"
-                         Icon="👤"
-                         Colour="green"
-                         Trend="+12.8%" />
-
-    <DashboardMetricCard Title="Pending Applications"
-                         Value="38"
-                         Description="Awaiting review or documents"
-                         Icon="📝"
-                         Colour="orange"
-                         Trend="Needs attention" />
-
-    <DashboardMetricCard Title="Overdue Payments"
-                         Value="7"
-                         Description="Payments requiring follow-up"
-                         Icon="⚠️"
-                         Colour="red"
-                         Trend="High priority" />
-</div>
-
-<div class="mt-8 grid grid-cols-1 gap-6 xl:grid-cols-3">
-    <AppCard Title="Recent Loan Applications"
-             Subtitle="Latest borrower activity requiring operational visibility"
-             Class="xl:col-span-2">
-        <div class="overflow-x-auto">
-            <table class="table">
-                <thead>
-                    <tr>
-                        <th>Borrower</th>
-                        <th>Product</th>
-                        <th>Amount</th>
-                        <th>Status</th>
-                        <th>Submitted</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td>Sarah Khan</td>
-                        <td>Prime Personal Loan</td>
-                        <td>£12,500</td>
-                        <td><span class="badge badge-warning badge-outline">Under Review</span></td>
-                        <td>Today</td>
-                    </tr>
-                    <tr>
-                        <td>James Miller</td>
-                        <td>Vehicle Finance</td>
-                        <td>£18,000</td>
-                        <td><span class="badge badge-success badge-outline">Approved</span></td>
-                        <td>Yesterday</td>
-                    </tr>
-                    <tr>
-                        <td>Amina Patel</td>
-                        <td>Business Growth Loan</td>
-                        <td>£35,000</td>
-                        <td><span class="badge badge-info badge-outline">Documents Requested</span></td>
-                        <td>2 days ago</td>
-                    </tr>
-                </tbody>
-            </table>
+@if (_isLoading)
+{
+    <div class="rounded-2xl border border-slate-200 bg-white p-12 text-center shadow-sm">
+        <div class="text-lg font-semibold text-slate-700">
+            Loading dashboard...
         </div>
-    </AppCard>
+    </div>
+}
+else if (!string.IsNullOrWhiteSpace(_errorMessage))
+{
+    <div class="rounded-2xl border border-red-200 bg-red-50 p-6 text-red-700">
+        @_errorMessage
+    </div>
+}
+else if (_dashboard is not null)
+{
+    <div class="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-4">
 
-    <AppCard Title="Operational Alerts"
-             Subtitle="Items that may need action today">
-        <div class="space-y-4">
-            <div class="rounded-xl border border-red-100 bg-red-50 p-4">
-                <div class="font-semibold text-red-700">Overdue repayments</div>
-                <div class="mt-1 text-sm text-red-600">
-                    7 repayments are overdue and may need customer service follow-up.
-                </div>
+        <MetricCard Title="Borrowers"
+                    Value="@_dashboard.TotalBorrowers.ToString("N0")"
+                    Icon="👤" />
+
+        <MetricCard Title="Lenders"
+                    Value="@_dashboard.TotalLenders.ToString("N0")"
+                    Icon="🏦" />
+
+        <MetricCard Title="Applications"
+                    Value="@_dashboard.TotalApplications.ToString("N0")"
+                    Icon="📝" />
+
+        <MetricCard Title="Funding Volume"
+                    Value="@($"£{_dashboard.TotalFundingVolume:N0}")"
+                    Icon="💰" />
+
+        <MetricCard Title="Approved"
+                    Value="@_dashboard.ApprovedApplications.ToString("N0")"
+                    Icon="✅" />
+
+        <MetricCard Title="Funded"
+                    Value="@_dashboard.FundedApplications.ToString("N0")"
+                    Icon="🚀" />
+
+        <MetricCard Title="Approval Rate"
+                    Value="@($"{_dashboard.ApprovalRate:N2}%")"
+                    Icon="📈" />
+
+        <MetricCard Title="Funding Rate"
+                    Value="@($"{_dashboard.FundingRate:N2}%")"
+                    Icon="📊" />
+    </div>
+
+    <div class="mt-8 grid grid-cols-1 gap-6 xl:grid-cols-2">
+
+        <div class="rounded-2xl border border-slate-200 bg-white shadow-sm">
+            <div class="border-b border-slate-200 px-6 py-4">
+                <h3 class="text-lg font-bold text-slate-900">
+                    Recent Applications
+                </h3>
             </div>
 
-            <div class="rounded-xl border border-orange-100 bg-orange-50 p-4">
-                <div class="font-semibold text-orange-700">Pending approvals</div>
-                <div class="mt-1 text-sm text-orange-600">
-                    12 loan products are waiting for admin approval.
-                </div>
-            </div>
+            <div class="overflow-x-auto">
+                <table class="min-w-full">
+                    <thead class="bg-slate-50">
+                        <tr>
+                            <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+                                Purpose
+                            </th>
 
-            <div class="rounded-xl border border-blue-100 bg-blue-50 p-4">
-                <div class="font-semibold text-blue-700">New lender onboarding</div>
-                <div class="mt-1 text-sm text-blue-600">
-                    3 lender profiles are ready for compliance review.
-                </div>
+                            <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+                                Amount
+                            </th>
+
+                            <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+                                Status
+                            </th>
+                        </tr>
+                    </thead>
+
+                    <tbody class="divide-y divide-slate-100">
+                        @foreach (var application in _dashboard.RecentApplications)
+                        {
+                            <tr>
+                                <td class="px-6 py-4 text-sm font-medium text-slate-900">
+                                    @application.Purpose
+                                </td>
+
+                                <td class="px-6 py-4 text-sm text-slate-700">
+                                    £@application.Amount.ToString("N0")
+                                </td>
+
+                                <td class="px-6 py-4">
+                                    <StatusBadge Status="@application.Status" />
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
             </div>
         </div>
-    </AppCard>
-</div>
 
-<div class="mt-8 grid grid-cols-1 gap-6 xl:grid-cols-2">
-    <AppCard Title="Platform Activity"
-             Subtitle="High-level operational movement across the marketplace">
-        <div class="space-y-5">
-            <div>
-                <div class="mb-2 flex justify-between text-sm">
-                    <span class="font-medium text-slate-700">Borrower onboarding</span>
-                    <span class="text-slate-500">76%</span>
-                </div>
-                <progress class="progress progress-primary w-full" value="76" max="100"></progress>
+        <div class="rounded-2xl border border-slate-200 bg-white shadow-sm">
+            <div class="border-b border-slate-200 px-6 py-4">
+                <h3 class="text-lg font-bold text-slate-900">
+                    Recent Borrowers
+                </h3>
             </div>
 
-            <div>
-                <div class="mb-2 flex justify-between text-sm">
-                    <span class="font-medium text-slate-700">Loan approval pipeline</span>
-                    <span class="text-slate-500">58%</span>
-                </div>
-                <progress class="progress progress-warning w-full" value="58" max="100"></progress>
-            </div>
+            <div class="divide-y divide-slate-100">
+                @foreach (var borrower in _dashboard.RecentBorrowers)
+                {
+                    <div class="px-6 py-4">
+                        <div class="font-semibold text-slate-900">
+                            @borrower.FullName
+                        </div>
 
-            <div>
-                <div class="mb-2 flex justify-between text-sm">
-                    <span class="font-medium text-slate-700">Repayment health</span>
-                    <span class="text-slate-500">91%</span>
-                </div>
-                <progress class="progress progress-success w-full" value="91" max="100"></progress>
+                        <div class="mt-1 text-sm text-slate-500">
+                            @borrower.Email
+                        </div>
+                    </div>
+                }
             </div>
         </div>
-    </AppCard>
+    </div>
+}
 
-    <AppCard Title="Interview Talking Points"
-             Subtitle="What this screen demonstrates technically">
-        <ul class="space-y-3 text-sm text-slate-600">
-            <li>✅ Reusable Blazor components for page headers, cards and metrics.</li>
-            <li>✅ Tailwind and daisyUI used for a modern SaaS-style interface.</li>
-            <li>✅ Dashboard structure suitable for borrower, lender and admin views.</li>
-            <li>✅ Clear visual hierarchy for operational and financial data.</li>
-            <li>✅ Component-first UI design instead of duplicated page markup.</li>
-        </ul>
-    </AppCard>
-</div>
+@code {
+    private DashboardSummaryDto? _dashboard;
+    private bool _isLoading = true;
+    private string? _errorMessage;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadDashboardAsync();
+    }
+
+    private async Task LoadDashboardAsync()
+    {
+        _isLoading = true;
+        _errorMessage = null;
+
+        try
+        {
+            var response = await DashboardApiClient.GetSummaryAsync();
+
+            if (response is null)
+            {
+                _errorMessage = "No response received from the API.";
+                return;
+            }
+
+            if (!response.Success)
+            {
+                _errorMessage = response.Errors.Count > 0
+                    ? string.Join(", ", response.Errors)
+                    : "Failed to load dashboard.";
+
+                return;
+            }
+
+            _dashboard = response.Data;
+        }
+        catch (Exception exception)
+        {
+            _errorMessage = $"Unable to load dashboard. {exception.Message}";
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+}

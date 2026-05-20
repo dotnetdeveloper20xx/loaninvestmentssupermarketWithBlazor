@@ -18,10 +18,27 @@
     </div>
 }
 
+@if (!string.IsNullOrWhiteSpace(_workflowMessage))
+{
+    <div class="mb-6 rounded-2xl border border-green-200 bg-green-50 p-4 text-sm text-green-700">
+        @_workflowMessage
+    </div>
+}
+
+@if (!string.IsNullOrWhiteSpace(_workflowError))
+{
+    <div class="mb-6 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+        @_workflowError
+    </div>
+}
+
 <div class="mb-6 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
     <div class="grid grid-cols-1 gap-4 lg:grid-cols-4">
         <div class="lg:col-span-2">
-            <label class="mb-2 block text-sm font-semibold text-slate-700">Search applications</label>
+            <label class="mb-2 block text-sm font-semibold text-slate-700">
+                Search applications
+            </label>
+
             <input class="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
                    placeholder="Search by purpose, borrower ID or product ID..."
                    @bind="_searchText"
@@ -29,7 +46,10 @@
         </div>
 
         <div>
-            <label class="mb-2 block text-sm font-semibold text-slate-700">Status</label>
+            <label class="mb-2 block text-sm font-semibold text-slate-700">
+                Status
+            </label>
+
             <select class="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 shadow-sm outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
                     @bind="_selectedStatus">
                 <option value="">All statuses</option>
@@ -85,6 +105,7 @@
         <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">Term</th>
         <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">Status</th>
         <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">Submitted</th>
+        <th class="px-6 py-4 text-right text-xs font-semibold uppercase tracking-wide text-slate-500">Actions</th>
     </HeaderTemplate>
 
     <RowTemplate>
@@ -93,12 +114,8 @@
             <tr class="hover:bg-slate-50">
                 <td class="px-6 py-4">
                     <div class="font-semibold text-slate-900">@application.Purpose</div>
-                    <div class="mt-1 text-xs text-slate-500">
-                        Borrower: @application.BorrowerId
-                    </div>
-                    <div class="mt-1 text-xs text-slate-500">
-                        Product: @application.LoanProductId
-                    </div>
+                    <div class="mt-1 text-xs text-slate-500">Borrower: @application.BorrowerId</div>
+                    <div class="mt-1 text-xs text-slate-500">Product: @application.LoanProductId</div>
                 </td>
 
                 <td class="px-6 py-4 text-sm font-semibold text-slate-900">
@@ -116,6 +133,34 @@
                 <td class="px-6 py-4 text-sm text-slate-500">
                     @application.SubmittedAtUtc.ToLocalTime().ToString("dd MMM yyyy")
                 </td>
+
+                <td class="px-6 py-4 text-right">
+                    <div class="flex justify-end gap-2">
+                        <button class="rounded-lg border border-purple-200 px-3 py-2 text-xs font-semibold text-purple-700 hover:bg-purple-50 disabled:opacity-50"
+                                disabled="@(_activeWorkflowId == application.Id || application.Status != "Submitted")"
+                                @onclick="() => MarkUnderReviewAsync(application.Id)">
+                            Review
+                        </button>
+
+                        <button class="rounded-lg border border-green-200 px-3 py-2 text-xs font-semibold text-green-700 hover:bg-green-50 disabled:opacity-50"
+                                disabled="@(_activeWorkflowId == application.Id || application.Status != "UnderReview")"
+                                @onclick="() => ApproveAsync(application.Id)">
+                            Approve
+                        </button>
+
+                        <button class="rounded-lg border border-red-200 px-3 py-2 text-xs font-semibold text-red-700 hover:bg-red-50 disabled:opacity-50"
+                                disabled="@(_activeWorkflowId == application.Id || application.Status is "Approved" or "Funded" or "Rejected")"
+                                @onclick="() => RejectAsync(application.Id)">
+                            Reject
+                        </button>
+
+                        <button class="rounded-lg border border-blue-200 px-3 py-2 text-xs font-semibold text-blue-700 hover:bg-blue-50 disabled:opacity-50"
+                                disabled="@(_activeWorkflowId == application.Id || application.Status != "Approved")"
+                                @onclick="() => FundAsync(application.Id)">
+                            Fund
+                        </button>
+                    </div>
+                </td>
             </tr>
         }
     </RowTemplate>
@@ -132,6 +177,10 @@
     private string? _errorMessage;
     private string _searchText = string.Empty;
     private string _selectedStatus = string.Empty;
+
+    private Guid? _activeWorkflowId;
+    private string? _workflowMessage;
+    private string? _workflowError;
 
     private List<LoanApplicationDto> FilteredApplications
     {
@@ -220,4 +269,73 @@
         _searchText = string.Empty;
         _selectedStatus = string.Empty;
     }
+
+    private async Task MarkUnderReviewAsync(Guid id)
+    {
+        await RunWorkflowAsync(id, "review");
+    }
+
+    private async Task ApproveAsync(Guid id)
+    {
+        await RunWorkflowAsync(id, "approve");
+    }
+
+    private async Task RejectAsync(Guid id)
+    {
+        await RunWorkflowAsync(id, "reject");
+    }
+
+    private async Task FundAsync(Guid id)
+    {
+        await RunWorkflowAsync(id, "fund");
+    }
+
+    private async Task RunWorkflowAsync(Guid id, string action)
+    {
+        _activeWorkflowId = id;
+        _workflowMessage = null;
+        _workflowError = null;
+
+        try
+        {
+            var response = action switch
+            {
+                "review" => await LoanApplicationsApiClient.MarkUnderReviewAsync(id),
+                "approve" => await LoanApplicationsApiClient.ApproveAsync(id),
+                "reject" => await LoanApplicationsApiClient.RejectAsync(id),
+                "fund" => await LoanApplicationsApiClient.FundAsync(id),
+                _ => null
+            };
+
+            if (response is null)
+            {
+                _workflowError = "No response received from the API.";
+                return;
+            }
+
+            if (!response.Success)
+            {
+                _workflowError = response.Errors.Count > 0
+                    ? string.Join(", ", response.Errors)
+                    : "Workflow action failed.";
+
+                return;
+            }
+
+            _workflowMessage = response.Message
+                               ?? response.Data
+                               ?? "Workflow action completed.";
+
+            await LoadApplicationsAsync();
+        }
+        catch (Exception exception)
+        {
+            _workflowError = $"Workflow action failed. {exception.Message}";
+        }
+        finally
+        {
+            _activeWorkflowId = null;
+        }
+    }
+    
 }
