@@ -1,0 +1,223 @@
+@page "/loan-applications"
+@inject LoanApplicationsApiClient LoanApplicationsApiClient
+
+<PageHeader Title="Loan Applications"
+            Subtitle="Manage borrower applications, review status and funding pipeline.">
+    <ActionContent>
+        <button class="rounded-xl bg-blue-600 px-5 py-3 text-sm font-semibold text-white shadow-sm hover:bg-blue-700"
+                @onclick="OpenCreateModal">
+            + New Application
+        </button>
+    </ActionContent>
+</PageHeader>
+
+@if (!string.IsNullOrWhiteSpace(_errorMessage))
+{
+    <div class="mb-6 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+        @_errorMessage
+    </div>
+}
+
+<div class="mb-6 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+    <div class="grid grid-cols-1 gap-4 lg:grid-cols-4">
+        <div class="lg:col-span-2">
+            <label class="mb-2 block text-sm font-semibold text-slate-700">Search applications</label>
+            <input class="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
+                   placeholder="Search by purpose, borrower ID or product ID..."
+                   @bind="_searchText"
+                   @bind:event="oninput" />
+        </div>
+
+        <div>
+            <label class="mb-2 block text-sm font-semibold text-slate-700">Status</label>
+            <select class="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 shadow-sm outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
+                    @bind="_selectedStatus">
+                <option value="">All statuses</option>
+                <option value="Submitted">Submitted</option>
+                <option value="UnderReview">Under Review</option>
+                <option value="Approved">Approved</option>
+                <option value="Rejected">Rejected</option>
+                <option value="Funded">Funded</option>
+                <option value="Withdrawn">Withdrawn</option>
+            </select>
+        </div>
+
+        <div class="flex items-end">
+            <button class="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm font-semibold text-slate-700 shadow-sm hover:bg-slate-50"
+                    @onclick="ClearFilters">
+                Clear Filters
+            </button>
+        </div>
+    </div>
+
+    <div class="mt-4 text-sm text-slate-500">
+        Showing <span class="font-semibold text-slate-800">@FilteredApplications.Count</span>
+        of <span class="font-semibold text-slate-800">@_applications.Count</span> applications
+    </div>
+</div>
+
+<AppDataTable Title="Loan Application Pipeline"
+              Subtitle="Operational view of submitted borrower applications."
+              IsLoading="_isLoading"
+              IsEmpty="@(!_isLoading && FilteredApplications.Count == 0)"
+              LoadingText="Loading loan applications..."
+              EmptyIcon="📝"
+              EmptyTitle="No loan applications found"
+              EmptyMessage="No applications match the current search or filter criteria.">
+
+    <HeaderActions>
+        <button class="rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm hover:bg-slate-50"
+                @onclick="LoadApplicationsAsync">
+            Refresh
+        </button>
+    </HeaderActions>
+
+    <EmptyActions>
+        <button class="rounded-xl bg-blue-600 px-5 py-3 text-sm font-semibold text-white shadow-sm hover:bg-blue-700"
+                @onclick="OpenCreateModal">
+            Create Application
+        </button>
+    </EmptyActions>
+
+    <HeaderTemplate>
+        <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">Application</th>
+        <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">Amount</th>
+        <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">Term</th>
+        <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">Status</th>
+        <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">Submitted</th>
+    </HeaderTemplate>
+
+    <RowTemplate>
+        @foreach (var application in FilteredApplications)
+        {
+            <tr class="hover:bg-slate-50">
+                <td class="px-6 py-4">
+                    <div class="font-semibold text-slate-900">@application.Purpose</div>
+                    <div class="mt-1 text-xs text-slate-500">
+                        Borrower: @application.BorrowerId
+                    </div>
+                    <div class="mt-1 text-xs text-slate-500">
+                        Product: @application.LoanProductId
+                    </div>
+                </td>
+
+                <td class="px-6 py-4 text-sm font-semibold text-slate-900">
+                    £@application.RequestedAmount.ToString("N0")
+                </td>
+
+                <td class="px-6 py-4 text-sm text-slate-700">
+                    @application.TermMonths months
+                </td>
+
+                <td class="px-6 py-4">
+                    <StatusBadge Status="@application.Status" />
+                </td>
+
+                <td class="px-6 py-4 text-sm text-slate-500">
+                    @application.SubmittedAtUtc.ToLocalTime().ToString("dd MMM yyyy")
+                </td>
+            </tr>
+        }
+    </RowTemplate>
+</AppDataTable>
+
+<CreateLoanApplicationModal IsOpen="_isCreateModalOpen"
+                            OnClose="CloseCreateModal"
+                            OnCreated="HandleApplicationCreated" />
+
+@code {
+    private List<LoanApplicationDto> _applications = [];
+    private bool _isLoading = true;
+    private bool _isCreateModalOpen;
+    private string? _errorMessage;
+    private string _searchText = string.Empty;
+    private string _selectedStatus = string.Empty;
+
+    private List<LoanApplicationDto> FilteredApplications
+    {
+        get
+        {
+            var query = _applications.AsEnumerable();
+
+            if (!string.IsNullOrWhiteSpace(_searchText))
+            {
+                query = query.Where(application =>
+                    application.Purpose.Contains(_searchText, StringComparison.OrdinalIgnoreCase)
+                    || application.BorrowerId.ToString().Contains(_searchText, StringComparison.OrdinalIgnoreCase)
+                    || application.LoanProductId.ToString().Contains(_searchText, StringComparison.OrdinalIgnoreCase));
+            }
+
+            if (!string.IsNullOrWhiteSpace(_selectedStatus))
+            {
+                query = query.Where(application =>
+                    application.Status.Equals(_selectedStatus, StringComparison.OrdinalIgnoreCase));
+            }
+
+            return query
+                .OrderByDescending(x => x.SubmittedAtUtc)
+                .ToList();
+        }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadApplicationsAsync();
+    }
+
+    private async Task LoadApplicationsAsync()
+    {
+        _isLoading = true;
+        _errorMessage = null;
+
+        try
+        {
+            var response = await LoanApplicationsApiClient.GetLoanApplicationsAsync();
+
+            if (response is null)
+            {
+                _errorMessage = "No response received from the API.";
+                return;
+            }
+
+            if (!response.Success)
+            {
+                _errorMessage = response.Errors.Count > 0
+                    ? string.Join(", ", response.Errors)
+                    : "Failed to load loan applications.";
+
+                return;
+            }
+
+            _applications = response.Data?.ToList() ?? [];
+        }
+        catch (Exception exception)
+        {
+            _errorMessage = $"Unable to load loan applications. {exception.Message}";
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private void OpenCreateModal()
+    {
+        _isCreateModalOpen = true;
+    }
+
+    private void CloseCreateModal()
+    {
+        _isCreateModalOpen = false;
+    }
+
+    private async Task HandleApplicationCreated()
+    {
+        await LoadApplicationsAsync();
+    }
+
+    private void ClearFilters()
+    {
+        _searchText = string.Empty;
+        _selectedStatus = string.Empty;
+    }
+}

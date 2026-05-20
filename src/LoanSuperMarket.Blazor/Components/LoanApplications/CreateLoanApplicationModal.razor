@@ -1,0 +1,200 @@
+@inject LoanApplicationsApiClient LoanApplicationsApiClient
+
+@if (IsOpen)
+{
+    <div class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 px-4 backdrop-blur-sm">
+        <div class="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-2xl bg-white p-8 shadow-2xl">
+            <div class="flex items-start justify-between gap-4">
+                <div>
+                    <h3 class="text-2xl font-bold text-slate-900">Submit Loan Application</h3>
+                    <p class="mt-2 text-sm text-slate-500">
+                        Create a borrower application against a published loan product.
+                    </p>
+                </div>
+
+                <button type="button"
+                        class="rounded-full p-2 text-slate-400 hover:bg-slate-100 hover:text-slate-700"
+                        @onclick="CloseAsync">
+                    ✕
+                </button>
+            </div>
+
+            @if (_apiErrors.Count > 0)
+            {
+                <div class="mt-6 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+                    <strong>Unable to submit application</strong>
+                    <ul class="mt-2 list-disc pl-5">
+                        @foreach (var error in _apiErrors)
+                        {
+                            <li>@error</li>
+                        }
+                    </ul>
+                </div>
+            }
+
+            <EditForm Model="_model" OnValidSubmit="CreateAsync">
+                <DataAnnotationsValidator />
+                <ValidationSummary class="mt-6 rounded-2xl border border-orange-200 bg-orange-50 p-4 text-sm text-orange-700" />
+
+                <div class="mt-8 grid grid-cols-1 gap-5">
+                    <div>
+                        <label class="mb-2 block text-sm font-semibold text-slate-700">Borrower ID</label>
+                        <InputText class="@InputClass" @bind-Value="_borrowerIdText" />
+                    </div>
+
+                    <div>
+                        <label class="mb-2 block text-sm font-semibold text-slate-700">Loan Product ID</label>
+                        <InputText class="@InputClass" @bind-Value="_loanProductIdText" />
+                    </div>
+
+                    <div class="grid grid-cols-1 gap-5 md:grid-cols-2">
+                        <div>
+                            <label class="mb-2 block text-sm font-semibold text-slate-700">Requested amount</label>
+                            <InputNumber class="@InputClass" @bind-Value="_model.RequestedAmount" />
+                            <ValidationMessage For="@(() => _model.RequestedAmount)" class="mt-2 text-sm text-red-600" />
+                        </div>
+
+                        <div>
+                            <label class="mb-2 block text-sm font-semibold text-slate-700">Term months</label>
+                            <InputNumber class="@InputClass" @bind-Value="_model.TermMonths" />
+                            <ValidationMessage For="@(() => _model.TermMonths)" class="mt-2 text-sm text-red-600" />
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="mb-2 block text-sm font-semibold text-slate-700">Purpose</label>
+                        <InputTextArea class="@TextAreaClass" @bind-Value="_model.Purpose" />
+                        <ValidationMessage For="@(() => _model.Purpose)" class="mt-2 text-sm text-red-600" />
+                    </div>
+                </div>
+
+                <div class="mt-8 flex justify-end gap-3 border-t border-slate-200 pt-5">
+                    <button type="button"
+                            class="rounded-xl px-5 py-3 text-sm font-semibold text-slate-600 hover:bg-slate-100"
+                            @onclick="CloseAsync"
+                            disabled="@_isSaving">
+                        Cancel
+                    </button>
+
+                    <button type="submit"
+                            class="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-5 py-3 text-sm font-semibold text-white shadow-sm hover:bg-blue-700 disabled:opacity-60"
+                            disabled="@_isSaving">
+                        @if (_isSaving)
+                        {
+                            <span class="h-4 w-4 animate-spin rounded-full border-2 border-blue-200 border-t-white"></span>
+                            <span>Submitting...</span>
+                        }
+                        else
+                        {
+                            <span>Submit Application</span>
+                        }
+                    </button>
+                </div>
+            </EditForm>
+        </div>
+    </div>
+}
+
+@code {
+    private const string InputClass =
+        "w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-100";
+
+    private const string TextAreaClass =
+        "min-h-32 w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-100";
+
+    private readonly List<string> _apiErrors = [];
+    private CreateLoanApplicationRequest _model = new();
+    private string _borrowerIdText = string.Empty;
+    private string _loanProductIdText = string.Empty;
+    private bool _isSaving;
+
+    [Parameter] public bool IsOpen { get; set; }
+    [Parameter] public EventCallback OnClose { get; set; }
+    [Parameter] public EventCallback OnCreated { get; set; }
+
+    protected override void OnParametersSet()
+    {
+        if (IsOpen && string.IsNullOrWhiteSpace(_model.Purpose) && !_isSaving)
+        {
+            ResetForm();
+        }
+    }
+
+    private void ResetForm()
+    {
+        _apiErrors.Clear();
+
+        _model = new CreateLoanApplicationRequest
+        {
+            RequestedAmount = 5000,
+            TermMonths = 24,
+            Purpose = string.Empty
+        };
+
+        _borrowerIdText = string.Empty;
+        _loanProductIdText = string.Empty;
+    }
+
+    private async Task CloseAsync()
+    {
+        if (_isSaving)
+        {
+            return;
+        }
+
+        await OnClose.InvokeAsync();
+    }
+
+    private async Task CreateAsync()
+    {
+        _apiErrors.Clear();
+
+        if (!Guid.TryParse(_borrowerIdText, out var borrowerId))
+        {
+            _apiErrors.Add("Borrower ID must be a valid GUID.");
+            return;
+        }
+
+        if (!Guid.TryParse(_loanProductIdText, out var loanProductId))
+        {
+            _apiErrors.Add("Loan Product ID must be a valid GUID.");
+            return;
+        }
+
+        _model.BorrowerId = borrowerId;
+        _model.LoanProductId = loanProductId;
+        _isSaving = true;
+
+        try
+        {
+            var response = await LoanApplicationsApiClient.CreateLoanApplicationAsync(_model);
+
+            if (response is null)
+            {
+                _apiErrors.Add("No response received from the API.");
+                return;
+            }
+
+            if (!response.Success)
+            {
+                _apiErrors.AddRange(response.Errors.Count > 0
+                    ? response.Errors
+                    : ["Failed to submit loan application."]);
+
+                return;
+            }
+
+            ResetForm();
+            await OnCreated.InvokeAsync();
+            await OnClose.InvokeAsync();
+        }
+        catch (Exception exception)
+        {
+            _apiErrors.Add($"Unable to submit loan application. {exception.Message}");
+        }
+        finally
+        {
+            _isSaving = false;
+        }
+    }
+}

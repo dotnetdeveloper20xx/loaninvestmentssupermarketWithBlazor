@@ -22,5 +22,6 @@ builder.Services.AddScoped(_ =>
 builder.Services.AddScoped<LoanProductsApiClient>();
 builder.Services.AddScoped<BorrowersApiClient>();
 builder.Services.AddScoped<LendersApiClient>();
+builder.Services.AddScoped<LoanApplicationsApiClient>();
 
 await builder.Build().RunAsync();

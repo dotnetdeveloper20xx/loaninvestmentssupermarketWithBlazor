@@ -26,6 +26,8 @@ public static class DependencyInjection
 
         services.AddScoped<ILenderRepository, LenderRepository>();
 
+        services.AddScoped<ILoanApplicationRepository, LoanApplicationRepository>();
+
         return services;
     }
 }
