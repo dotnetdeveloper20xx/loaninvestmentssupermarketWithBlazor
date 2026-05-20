@@ -18,41 +18,13 @@
     </div>
 }
 
-<div class="mb-6 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-    <div class="grid grid-cols-1 gap-4 lg:grid-cols-4">
-        <div class="lg:col-span-2">
-            <label class="mb-2 block text-sm font-semibold text-slate-700">Search lenders</label>
-            <input class="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
-                   placeholder="Search by company, contact, email or phone..."
-                   @bind="_searchText"
-                   @bind:event="oninput" />
-        </div>
-
-        <div>
-            <label class="mb-2 block text-sm font-semibold text-slate-700">Status</label>
-            <select class="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 shadow-sm outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
-                    @bind="_selectedStatus">
-                <option value="">All statuses</option>
-                <option value="PendingVerification">Pending Verification</option>
-                <option value="Verified">Verified</option>
-                <option value="Suspended">Suspended</option>
-                <option value="Archived">Archived</option>
-            </select>
-        </div>
-
-        <div class="flex items-end">
-            <button class="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm font-semibold text-slate-700 shadow-sm hover:bg-slate-50"
-                    @onclick="ClearFilters">
-                Clear Filters
-            </button>
-        </div>
-    </div>
-
-    <div class="mt-4 text-sm text-slate-500">
-        Showing <span class="font-semibold text-slate-800">@FilteredLenders.Count</span>
-        of <span class="font-semibold text-slate-800">@_lenders.Count</span> lenders
-    </div>
-</div>
+<DataGridToolbar State="_gridState"
+                 SearchLabel="Search lenders"
+                 SearchPlaceholder="Search by company, contact, email or phone..."
+                 VisibleCount="PagedLenders.Count"
+                 TotalCount="_lenders.Count"
+                 StatusOptions="_statusOptions"
+                 OnStateChanged="HandleGridStateChanged" />
 
 <AppDataTable Title="Lender Management"
               Subtitle="Operational lender list for verification and funding workflows."
@@ -71,22 +43,61 @@
     </HeaderActions>
 
     <EmptyActions>
-        <button class="rounded-xl bg-blue-600 px-5 py-3 text-sm font-semibold text-white shadow-sm hover:bg-blue-700"
-                @onclick="OpenCreateModal">
-            Create Lender
-        </button>
+        @if (_lenders.Count == 0)
+        {
+            <button class="rounded-xl bg-blue-600 px-5 py-3 text-sm font-semibold text-white shadow-sm hover:bg-blue-700"
+                    @onclick="OpenCreateModal">
+                Create Lender
+            </button>
+        }
+        else
+        {
+            <button class="rounded-xl border border-slate-300 bg-white px-5 py-3 text-sm font-semibold text-slate-700 shadow-sm hover:bg-slate-50"
+                    @onclick="ClearFilters">
+                Clear Filters
+            </button>
+        }
     </EmptyActions>
 
     <HeaderTemplate>
-        <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">Lender</th>
-        <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">Contact</th>
-        <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">Available Funds</th>
-        <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">Status</th>
-        <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">Created</th>
+        <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+            <DataGridColumnHeader State="_gridState"
+                                  Column="CompanyName"
+                                  Title="Lender"
+                                  OnSortChanged="HandleGridStateChanged" />
+        </th>
+
+        <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+            <DataGridColumnHeader State="_gridState"
+                                  Column="Email"
+                                  Title="Contact"
+                                  OnSortChanged="HandleGridStateChanged" />
+        </th>
+
+        <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+            <DataGridColumnHeader State="_gridState"
+                                  Column="AvailableFunds"
+                                  Title="Available Funds"
+                                  OnSortChanged="HandleGridStateChanged" />
+        </th>
+
+        <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+            <DataGridColumnHeader State="_gridState"
+                                  Column="Status"
+                                  Title="Status"
+                                  OnSortChanged="HandleGridStateChanged" />
+        </th>
+
+        <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+            <DataGridColumnHeader State="_gridState"
+                                  Column="CreatedAtUtc"
+                                  Title="Created"
+                                  OnSortChanged="HandleGridStateChanged" />
+        </th>
     </HeaderTemplate>
 
     <RowTemplate>
-        @foreach (var lender in FilteredLenders)
+        @foreach (var lender in PagedLenders)
         {
             <tr class="hover:bg-slate-50">
                 <td class="px-6 py-4">
@@ -115,17 +126,29 @@
     </RowTemplate>
 </AppDataTable>
 
+<DataGridPager State="_gridState"
+               TotalCount="FilteredLenders.Count"
+               OnPageChanged="HandleGridStateChanged" />
+
 <CreateLenderModal IsOpen="_isCreateModalOpen"
                    OnClose="CloseCreateModal"
                    OnCreated="HandleLenderCreated" />
 
 @code {
+    private readonly GridState _gridState = new();
+
+    private readonly IReadOnlyList<DataGridToolbar.DataGridStatusOption> _statusOptions =
+    [
+        new("PendingVerification", "Pending Verification"),
+        new("Verified", "Verified"),
+        new("Suspended", "Suspended"),
+        new("Archived", "Archived")
+    ];
+
     private List<LenderDto> _lenders = [];
     private bool _isLoading = true;
     private bool _isCreateModalOpen;
     private string? _errorMessage;
-    private string _searchText = string.Empty;
-    private string _selectedStatus = string.Empty;
 
     private List<LenderDto> FilteredLenders
     {
@@ -133,26 +156,50 @@
         {
             var query = _lenders.AsEnumerable();
 
-            if (!string.IsNullOrWhiteSpace(_searchText))
+            if (!string.IsNullOrWhiteSpace(_gridState.SearchText))
             {
                 query = query.Where(lender =>
-                    lender.CompanyName.Contains(_searchText, StringComparison.OrdinalIgnoreCase)
-                    || lender.ContactName.Contains(_searchText, StringComparison.OrdinalIgnoreCase)
-                    || lender.Email.Contains(_searchText, StringComparison.OrdinalIgnoreCase)
-                    || lender.PhoneNumber.Contains(_searchText, StringComparison.OrdinalIgnoreCase));
+                    lender.CompanyName.Contains(_gridState.SearchText, StringComparison.OrdinalIgnoreCase)
+                    || lender.ContactName.Contains(_gridState.SearchText, StringComparison.OrdinalIgnoreCase)
+                    || lender.Email.Contains(_gridState.SearchText, StringComparison.OrdinalIgnoreCase)
+                    || lender.PhoneNumber.Contains(_gridState.SearchText, StringComparison.OrdinalIgnoreCase));
             }
 
-            if (!string.IsNullOrWhiteSpace(_selectedStatus))
+            if (!string.IsNullOrWhiteSpace(_gridState.SelectedStatus))
             {
                 query = query.Where(lender =>
-                    lender.Status.Equals(_selectedStatus, StringComparison.OrdinalIgnoreCase));
+                    lender.Status.Equals(_gridState.SelectedStatus, StringComparison.OrdinalIgnoreCase));
             }
 
-            return query
-                .OrderByDescending(x => x.CreatedAtUtc)
-                .ToList();
+            query = (_gridState.SortColumn, _gridState.SortAscending) switch
+            {
+                ("CompanyName", true) => query.OrderBy(lender => lender.CompanyName),
+                ("CompanyName", false) => query.OrderByDescending(lender => lender.CompanyName),
+
+                ("Email", true) => query.OrderBy(lender => lender.Email),
+                ("Email", false) => query.OrderByDescending(lender => lender.Email),
+
+                ("AvailableFunds", true) => query.OrderBy(lender => lender.AvailableFunds),
+                ("AvailableFunds", false) => query.OrderByDescending(lender => lender.AvailableFunds),
+
+                ("Status", true) => query.OrderBy(lender => lender.Status),
+                ("Status", false) => query.OrderByDescending(lender => lender.Status),
+
+                ("CreatedAtUtc", true) => query.OrderBy(lender => lender.CreatedAtUtc),
+                ("CreatedAtUtc", false) => query.OrderByDescending(lender => lender.CreatedAtUtc),
+
+                _ => query.OrderByDescending(lender => lender.CreatedAtUtc)
+            };
+
+            return query.ToList();
         }
     }
+
+    private List<LenderDto> PagedLenders =>
+        FilteredLenders
+            .Skip((_gridState.PageNumber - 1) * _gridState.PageSize)
+            .Take(_gridState.PageSize)
+            .ToList();
 
     protected override async Task OnInitializedAsync()
     {
@@ -195,6 +242,12 @@
         }
     }
 
+    private Task HandleGridStateChanged()
+    {
+        StateHasChanged();
+        return Task.CompletedTask;
+    }
+
     private void OpenCreateModal()
     {
         _isCreateModalOpen = true;
@@ -212,7 +265,6 @@
 
     private void ClearFilters()
     {
-        _searchText = string.Empty;
-        _selectedStatus = string.Empty;
+        _gridState.ClearFilters();
     }
 }

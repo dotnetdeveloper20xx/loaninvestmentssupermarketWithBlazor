@@ -34,49 +34,13 @@
     </div>
 }
 
-<div class="mb-6 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-    <div class="grid grid-cols-1 gap-4 lg:grid-cols-4">
-        <div class="lg:col-span-2">
-            <label class="mb-2 block text-sm font-semibold text-slate-700">
-                Search applications
-            </label>
-
-            <input class="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
-                   placeholder="Search by purpose, borrower ID or product ID..."
-                   @bind="_searchText"
-                   @bind:event="oninput" />
-        </div>
-
-        <div>
-            <label class="mb-2 block text-sm font-semibold text-slate-700">
-                Status
-            </label>
-
-            <select class="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 shadow-sm outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
-                    @bind="_selectedStatus">
-                <option value="">All statuses</option>
-                <option value="Submitted">Submitted</option>
-                <option value="UnderReview">Under Review</option>
-                <option value="Approved">Approved</option>
-                <option value="Rejected">Rejected</option>
-                <option value="Funded">Funded</option>
-                <option value="Withdrawn">Withdrawn</option>
-            </select>
-        </div>
-
-        <div class="flex items-end">
-            <button class="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm font-semibold text-slate-700 shadow-sm hover:bg-slate-50"
-                    @onclick="ClearFilters">
-                Clear Filters
-            </button>
-        </div>
-    </div>
-
-    <div class="mt-4 text-sm text-slate-500">
-        Showing <span class="font-semibold text-slate-800">@FilteredApplications.Count</span>
-        of <span class="font-semibold text-slate-800">@_applications.Count</span> applications
-    </div>
-</div>
+<DataGridToolbar State="_gridState"
+                 SearchLabel="Search applications"
+                 SearchPlaceholder="Search by purpose, borrower ID or product ID..."
+                 VisibleCount="PagedApplications.Count"
+                 TotalCount="_applications.Count"
+                 StatusOptions="_statusOptions"
+                 OnStateChanged="HandleGridStateChanged" />
 
 <AppDataTable Title="Loan Application Pipeline"
               Subtitle="Operational view of submitted borrower applications."
@@ -95,23 +59,65 @@
     </HeaderActions>
 
     <EmptyActions>
-        <button class="rounded-xl bg-blue-600 px-5 py-3 text-sm font-semibold text-white shadow-sm hover:bg-blue-700"
-                @onclick="OpenCreateModal">
-            Create Application
-        </button>
+        @if (_applications.Count == 0)
+        {
+            <button class="rounded-xl bg-blue-600 px-5 py-3 text-sm font-semibold text-white shadow-sm hover:bg-blue-700"
+                    @onclick="OpenCreateModal">
+                Create Application
+            </button>
+        }
+        else
+        {
+            <button class="rounded-xl border border-slate-300 bg-white px-5 py-3 text-sm font-semibold text-slate-700 shadow-sm hover:bg-slate-50"
+                    @onclick="ClearFilters">
+                Clear Filters
+            </button>
+        }
     </EmptyActions>
 
     <HeaderTemplate>
-        <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">Application</th>
-        <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">Amount</th>
-        <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">Term</th>
-        <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">Status</th>
-        <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">Submitted</th>
-        <th class="px-6 py-4 text-right text-xs font-semibold uppercase tracking-wide text-slate-500">Actions</th>
+        <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+            <DataGridColumnHeader State="_gridState"
+                                  Column="Purpose"
+                                  Title="Application"
+                                  OnSortChanged="HandleGridStateChanged" />
+        </th>
+
+        <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+            <DataGridColumnHeader State="_gridState"
+                                  Column="RequestedAmount"
+                                  Title="Amount"
+                                  OnSortChanged="HandleGridStateChanged" />
+        </th>
+
+        <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+            <DataGridColumnHeader State="_gridState"
+                                  Column="TermMonths"
+                                  Title="Term"
+                                  OnSortChanged="HandleGridStateChanged" />
+        </th>
+
+        <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+            <DataGridColumnHeader State="_gridState"
+                                  Column="Status"
+                                  Title="Status"
+                                  OnSortChanged="HandleGridStateChanged" />
+        </th>
+
+        <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+            <DataGridColumnHeader State="_gridState"
+                                  Column="SubmittedAtUtc"
+                                  Title="Submitted"
+                                  OnSortChanged="HandleGridStateChanged" />
+        </th>
+
+        <th class="px-6 py-4 text-right text-xs font-semibold uppercase tracking-wide text-slate-500">
+            Actions
+        </th>
     </HeaderTemplate>
 
     <RowTemplate>
-        @foreach (var application in FilteredApplications)
+        @foreach (var application in PagedApplications)
         {
             <tr class="hover:bg-slate-50">
                 <td class="px-6 py-4">
@@ -168,18 +174,31 @@
     </RowTemplate>
 </AppDataTable>
 
+<DataGridPager State="_gridState"
+               TotalCount="FilteredApplications.Count"
+               OnPageChanged="HandleGridStateChanged" />
+
 <CreateLoanApplicationModal IsOpen="_isCreateModalOpen"
                             OnClose="CloseCreateModal"
                             OnCreated="HandleApplicationCreated" />
 
 @code {
+    private readonly GridState _gridState = new();
+
+    private readonly IReadOnlyList<DataGridToolbar.DataGridStatusOption> _statusOptions =
+    [
+        new("Submitted", "Submitted"),
+        new("UnderReview", "Under Review"),
+        new("Approved", "Approved"),
+        new("Rejected", "Rejected"),
+        new("Funded", "Funded"),
+        new("Withdrawn", "Withdrawn")
+    ];
+
     private List<LoanApplicationDto> _applications = [];
     private bool _isLoading = true;
     private bool _isCreateModalOpen;
     private string? _errorMessage;
-    private string _searchText = string.Empty;
-    private string _selectedStatus = string.Empty;
-
     private Guid? _activeWorkflowId;
     private string? _workflowMessage;
     private string? _workflowError;
@@ -190,25 +209,49 @@
         {
             var query = _applications.AsEnumerable();
 
-            if (!string.IsNullOrWhiteSpace(_searchText))
+            if (!string.IsNullOrWhiteSpace(_gridState.SearchText))
             {
                 query = query.Where(application =>
-                    application.Purpose.Contains(_searchText, StringComparison.OrdinalIgnoreCase)
-                    || application.BorrowerId.ToString().Contains(_searchText, StringComparison.OrdinalIgnoreCase)
-                    || application.LoanProductId.ToString().Contains(_searchText, StringComparison.OrdinalIgnoreCase));
+                    application.Purpose.Contains(_gridState.SearchText, StringComparison.OrdinalIgnoreCase)
+                    || application.BorrowerId.ToString().Contains(_gridState.SearchText, StringComparison.OrdinalIgnoreCase)
+                    || application.LoanProductId.ToString().Contains(_gridState.SearchText, StringComparison.OrdinalIgnoreCase));
             }
 
-            if (!string.IsNullOrWhiteSpace(_selectedStatus))
+            if (!string.IsNullOrWhiteSpace(_gridState.SelectedStatus))
             {
                 query = query.Where(application =>
-                    application.Status.Equals(_selectedStatus, StringComparison.OrdinalIgnoreCase));
+                    application.Status.Equals(_gridState.SelectedStatus, StringComparison.OrdinalIgnoreCase));
             }
 
-            return query
-                .OrderByDescending(x => x.SubmittedAtUtc)
-                .ToList();
+            query = (_gridState.SortColumn, _gridState.SortAscending) switch
+            {
+                ("Purpose", true) => query.OrderBy(application => application.Purpose),
+                ("Purpose", false) => query.OrderByDescending(application => application.Purpose),
+
+                ("RequestedAmount", true) => query.OrderBy(application => application.RequestedAmount),
+                ("RequestedAmount", false) => query.OrderByDescending(application => application.RequestedAmount),
+
+                ("TermMonths", true) => query.OrderBy(application => application.TermMonths),
+                ("TermMonths", false) => query.OrderByDescending(application => application.TermMonths),
+
+                ("Status", true) => query.OrderBy(application => application.Status),
+                ("Status", false) => query.OrderByDescending(application => application.Status),
+
+                ("SubmittedAtUtc", true) => query.OrderBy(application => application.SubmittedAtUtc),
+                ("SubmittedAtUtc", false) => query.OrderByDescending(application => application.SubmittedAtUtc),
+
+                _ => query.OrderByDescending(application => application.SubmittedAtUtc)
+            };
+
+            return query.ToList();
         }
     }
+
+    private List<LoanApplicationDto> PagedApplications =>
+        FilteredApplications
+            .Skip((_gridState.PageNumber - 1) * _gridState.PageSize)
+            .Take(_gridState.PageSize)
+            .ToList();
 
     protected override async Task OnInitializedAsync()
     {
@@ -251,6 +294,12 @@
         }
     }
 
+    private Task HandleGridStateChanged()
+    {
+        StateHasChanged();
+        return Task.CompletedTask;
+    }
+
     private void OpenCreateModal()
     {
         _isCreateModalOpen = true;
@@ -268,28 +317,7 @@
 
     private void ClearFilters()
     {
-        _searchText = string.Empty;
-        _selectedStatus = string.Empty;
-    }
-
-    private async Task MarkUnderReviewAsync(Guid id)
-    {
-        await RunWorkflowAsync(id, "review");
-    }
-
-    private async Task ApproveAsync(Guid id)
-    {
-        await RunWorkflowAsync(id, "approve");
-    }
-
-    private async Task RejectAsync(Guid id)
-    {
-        await RunWorkflowAsync(id, "reject");
-    }
-
-    private async Task FundAsync(Guid id)
-    {
-        await RunWorkflowAsync(id, "fund");
+        _gridState.ClearFilters();
     }
 
     private void ConfirmReview(Guid id)
@@ -340,6 +368,26 @@
         });
     }
 
+    private async Task MarkUnderReviewAsync(Guid id)
+    {
+        await RunWorkflowAsync(id, "review");
+    }
+
+    private async Task ApproveAsync(Guid id)
+    {
+        await RunWorkflowAsync(id, "approve");
+    }
+
+    private async Task RejectAsync(Guid id)
+    {
+        await RunWorkflowAsync(id, "reject");
+    }
+
+    private async Task FundAsync(Guid id)
+    {
+        await RunWorkflowAsync(id, "fund");
+    }
+
     private async Task RunWorkflowAsync(Guid id, string action)
     {
         _activeWorkflowId = id;
@@ -359,26 +407,28 @@
 
             if (response is null)
             {
-                _workflowError = "No response received from the API.";
+                const string errorMessage = "No response received from the API.";
+                _workflowError = errorMessage;
+                ToastService.ShowError("Workflow failed", errorMessage);
                 return;
             }
 
             if (!response.Success)
             {
                 var errorMessage = response.Errors.Count > 0
-                                    ? string.Join(", ", response.Errors)
-                                    : "Workflow action failed.";
+                    ? string.Join(", ", response.Errors)
+                    : "Workflow action failed.";
 
-                ToastService.ShowError("Workflow failed", errorMessage);
                 _workflowError = errorMessage;
-
+                ToastService.ShowError("Workflow failed", errorMessage);
                 return;
             }
 
             var successMessage = response.Message
-                     ?? response.Data
-                     ?? "Workflow action completed.";
+                                 ?? response.Data
+                                 ?? "Workflow action completed.";
 
+            _workflowMessage = successMessage;
             ToastService.ShowSuccess("Workflow completed", successMessage);
 
             await LoadApplicationsAsync();
@@ -393,5 +443,4 @@
             _activeWorkflowId = null;
         }
     }
-    
 }
