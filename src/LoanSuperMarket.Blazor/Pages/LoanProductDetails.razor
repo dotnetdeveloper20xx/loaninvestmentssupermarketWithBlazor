@@ -171,8 +171,18 @@ else if (_loanProduct is not null)
                         }
                     </button>
 
-                    <button class="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50">
-                        Publish Product
+                    <button class="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-60"
+                            @onclick="PublishAsync"
+                            disabled="@(_isPublishing || _loanProduct.Status != "Approved")">
+                        @if (_isPublishing)
+                        {
+                            <span class="h-4 w-4 animate-spin rounded-full border-2 border-slate-200 border-t-slate-700"></span>
+                            <span>Publishing...</span>
+                        }
+                        else
+                        {
+                            <span>Publish Product</span>
+                        }
                     </button>
 
                     <button class="w-full rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700 hover:bg-red-100">
@@ -201,6 +211,8 @@ else if (_loanProduct is not null)
     private string? _workflowError;
 
     private bool _isApproving;
+
+    private bool _isPublishing;
 
     protected override async Task OnParametersSetAsync()
     {
@@ -337,6 +349,52 @@ else if (_loanProduct is not null)
         finally
         {
             _isApproving = false;
+        }
+    }
+
+    private async Task PublishAsync()
+    {
+        if (_loanProduct is null)
+        {
+            return;
+        }
+
+        _isPublishing = true;
+        _workflowMessage = null;
+        _workflowError = null;
+
+        try
+        {
+            var response = await LoanProductsApiClient.PublishAsync(_loanProduct.Id);
+
+            if (response is null)
+            {
+                _workflowError = "No response received from the API.";
+                return;
+            }
+
+            if (!response.Success)
+            {
+                _workflowError = response.Errors.Count > 0
+                    ? string.Join(", ", response.Errors)
+                    : "Failed to publish loan product.";
+
+                return;
+            }
+
+            _workflowMessage = response.Message
+                               ?? response.Data
+                               ?? "Loan product published.";
+
+            await LoadLoanProductAsync();
+        }
+        catch (Exception exception)
+        {
+            _workflowError = $"Unable to publish loan product. {exception.Message}";
+        }
+        finally
+        {
+            _isPublishing = false;
         }
     }
 }

@@ -68,4 +68,17 @@ public sealed class LoanProductsApiClient
         return await response.Content.ReadFromJsonAsync<ApiResponse<string>>(
             cancellationToken);
     }
+
+    public async Task<ApiResponse<string>?> PublishAsync(
+        Guid id,
+        CancellationToken cancellationToken = default)
+    {
+        var response = await _httpClient.PostAsync(
+            $"api/loan-products/{id}/publish",
+            content: null,
+            cancellationToken);
+
+        return await response.Content.ReadFromJsonAsync<ApiResponse<string>>(
+            cancellationToken);
+    }
 }

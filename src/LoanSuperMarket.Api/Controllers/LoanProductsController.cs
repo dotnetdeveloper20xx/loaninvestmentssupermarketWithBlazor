@@ -2,6 +2,7 @@ using LoanSuperMarket.Application.Features.LoanProducts.ApproveLoanProduct;
 using LoanSuperMarket.Application.Features.LoanProducts.CreateLoanProduct;
 using LoanSuperMarket.Application.Features.LoanProducts.GetLoanProductById;
 using LoanSuperMarket.Application.Features.LoanProducts.GetLoanProducts;
+using LoanSuperMarket.Application.Features.LoanProducts.PublishLoanProduct;
 using LoanSuperMarket.Application.Features.LoanProducts.SubmitLoanProductForApproval;
 using LoanSuperMarket.Shared.Common;
 using LoanSuperMarket.Shared.LoanProducts;
@@ -99,6 +100,20 @@ public sealed class LoanProductsController : ControllerBase
 
         return Ok(ApiResponse<string>.Ok(
             "Loan product approved.",
+            "Workflow action completed."));
+    }
+
+    [HttpPost("{id:guid}/publish")]
+    public async Task<ActionResult<ApiResponse<string>>> Publish(
+    Guid id,
+    CancellationToken cancellationToken)
+    {
+        await _sender.Send(
+            new PublishLoanProductCommand(id),
+            cancellationToken);
+
+        return Ok(ApiResponse<string>.Ok(
+            "Loan product published.",
             "Workflow action completed."));
     }
 }
