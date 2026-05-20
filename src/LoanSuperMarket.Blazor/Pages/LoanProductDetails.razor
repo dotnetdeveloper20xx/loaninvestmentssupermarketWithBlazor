@@ -185,8 +185,18 @@ else if (_loanProduct is not null)
                         }
                     </button>
 
-                    <button class="w-full rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700 hover:bg-red-100">
-                        Archive Product
+                    <button class="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700 hover:bg-red-100 disabled:opacity-60"
+                            @onclick="ArchiveAsync"
+                            disabled="@(_isArchiving || _loanProduct.Status == "Archived")">
+                        @if (_isArchiving)
+                        {
+                            <span class="h-4 w-4 animate-spin rounded-full border-2 border-red-200 border-t-red-700"></span>
+                            <span>Archiving...</span>
+                        }
+                        else
+                        {
+                            <span>Archive Product</span>
+                        }
                     </button>
                 </div>
             </AppCard>
@@ -213,6 +223,8 @@ else if (_loanProduct is not null)
     private bool _isApproving;
 
     private bool _isPublishing;
+
+    private bool _isArchiving;
 
     protected override async Task OnParametersSetAsync()
     {
@@ -395,6 +407,52 @@ else if (_loanProduct is not null)
         finally
         {
             _isPublishing = false;
+        }
+    }
+
+    private async Task ArchiveAsync()
+    {
+        if (_loanProduct is null)
+        {
+            return;
+        }
+
+        _isArchiving = true;
+        _workflowMessage = null;
+        _workflowError = null;
+
+        try
+        {
+            var response = await LoanProductsApiClient.ArchiveAsync(_loanProduct.Id);
+
+            if (response is null)
+            {
+                _workflowError = "No response received from the API.";
+                return;
+            }
+
+            if (!response.Success)
+            {
+                _workflowError = response.Errors.Count > 0
+                    ? string.Join(", ", response.Errors)
+                    : "Failed to archive loan product.";
+
+                return;
+            }
+
+            _workflowMessage = response.Message
+                               ?? response.Data
+                               ?? "Loan product archived.";
+
+            await LoadLoanProductAsync();
+        }
+        catch (Exception exception)
+        {
+            _workflowError = $"Unable to archive loan product. {exception.Message}";
+        }
+        finally
+        {
+            _isArchiving = false;
         }
     }
 }

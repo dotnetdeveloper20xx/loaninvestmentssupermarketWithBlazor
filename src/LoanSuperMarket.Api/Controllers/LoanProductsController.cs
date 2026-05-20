@@ -1,4 +1,5 @@
 using LoanSuperMarket.Application.Features.LoanProducts.ApproveLoanProduct;
+using LoanSuperMarket.Application.Features.LoanProducts.ArchiveLoanProduct;
 using LoanSuperMarket.Application.Features.LoanProducts.CreateLoanProduct;
 using LoanSuperMarket.Application.Features.LoanProducts.GetLoanProductById;
 using LoanSuperMarket.Application.Features.LoanProducts.GetLoanProducts;
@@ -114,6 +115,20 @@ public sealed class LoanProductsController : ControllerBase
 
         return Ok(ApiResponse<string>.Ok(
             "Loan product published.",
+            "Workflow action completed."));
+    }
+
+    [HttpPost("{id:guid}/archive")]
+    public async Task<ActionResult<ApiResponse<string>>> Archive(
+    Guid id,
+    CancellationToken cancellationToken)
+    {
+        await _sender.Send(
+            new ArchiveLoanProductCommand(id),
+            cancellationToken);
+
+        return Ok(ApiResponse<string>.Ok(
+            "Loan product archived.",
             "Workflow action completed."));
     }
 }
