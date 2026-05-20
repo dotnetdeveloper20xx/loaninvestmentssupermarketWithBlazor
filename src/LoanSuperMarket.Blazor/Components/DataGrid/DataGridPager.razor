@@ -1,0 +1,66 @@
+@if (TotalCount > 0)
+{
+    <div class="flex flex-col gap-4 border-t border-slate-200 px-6 py-4 sm:flex-row sm:items-center sm:justify-between">
+        <div class="text-sm text-slate-500">
+            Page
+            <span class="font-semibold text-slate-800">@State.PageNumber</span>
+            of
+            <span class="font-semibold text-slate-800">@TotalPages</span>
+        </div>
+
+        <div class="flex items-center gap-2">
+            <button class="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+                    disabled="@IsFirstPage"
+                    @onclick="PreviousPage">
+                Previous
+            </button>
+
+            <button class="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+                    disabled="@IsLastPage"
+                    @onclick="NextPage">
+                Next
+            </button>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter, EditorRequired]
+    public GridState State { get; set; } = new();
+
+    [Parameter]
+    public int TotalCount { get; set; }
+
+    [Parameter]
+    public EventCallback OnPageChanged { get; set; }
+
+    private int TotalPages => Math.Max(1, (int)Math.Ceiling((double)TotalCount / State.PageSize));
+
+    private bool IsFirstPage => State.PageNumber <= 1;
+
+    private bool IsLastPage => State.PageNumber >= TotalPages;
+
+    private async Task PreviousPage()
+    {
+        if (IsFirstPage)
+        {
+            return;
+        }
+
+        State.PageNumber--;
+
+        await OnPageChanged.InvokeAsync();
+    }
+
+    private async Task NextPage()
+    {
+        if (IsLastPage)
+        {
+            return;
+        }
+
+        State.PageNumber++;
+
+        await OnPageChanged.InvokeAsync();
+    }
+}

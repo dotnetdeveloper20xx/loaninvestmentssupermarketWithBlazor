@@ -1,0 +1,105 @@
+<div class="mb-6 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+    <div class="grid grid-cols-1 gap-4 lg:grid-cols-4">
+        <div class="lg:col-span-2">
+            <label class="mb-2 block text-sm font-semibold text-slate-700">
+                @SearchLabel
+            </label>
+
+            <input class="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
+                   placeholder="@SearchPlaceholder"
+                   value="@State.SearchText"
+                   @oninput="HandleSearchChanged" />
+        </div>
+
+        <div>
+            <label class="mb-2 block text-sm font-semibold text-slate-700">
+                Status
+            </label>
+
+            <select class="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 shadow-sm outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
+                    value="@State.SelectedStatus"
+                    @onchange="HandleStatusChanged">
+                <option value="">All statuses</option>
+
+                @foreach (var status in StatusOptions)
+                {
+                    <option value="@status.Value">
+                        @status.Label
+                    </option>
+                }
+            </select>
+        </div>
+
+        <div class="flex items-end">
+            <button class="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm font-semibold text-slate-700 shadow-sm hover:bg-slate-50"
+                    @onclick="HandleClear">
+                Clear Filters
+            </button>
+        </div>
+    </div>
+
+    <div class="mt-4 flex flex-col gap-2 text-sm text-slate-500 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+            Showing
+            <span class="font-semibold text-slate-800">@VisibleCount</span>
+            of
+            <span class="font-semibold text-slate-800">@TotalCount</span>
+            records
+        </div>
+
+        @if (!string.IsNullOrWhiteSpace(State.SearchText) || !string.IsNullOrWhiteSpace(State.SelectedStatus))
+        {
+            <div class="text-blue-600">
+                Filters active
+            </div>
+        }
+    </div>
+</div>
+
+@code {
+    [Parameter, EditorRequired]
+    public GridState State { get; set; } = new();
+
+    [Parameter]
+    public string SearchLabel { get; set; } = "Search";
+
+    [Parameter]
+    public string SearchPlaceholder { get; set; } = "Search records...";
+
+    [Parameter]
+    public int VisibleCount { get; set; }
+
+    [Parameter]
+    public int TotalCount { get; set; }
+
+    [Parameter]
+    public IReadOnlyList<DataGridStatusOption> StatusOptions { get; set; } = [];
+
+    [Parameter]
+    public EventCallback OnStateChanged { get; set; }
+
+    private async Task HandleSearchChanged(ChangeEventArgs args)
+    {
+        State.SearchText = args.Value?.ToString() ?? string.Empty;
+        State.PageNumber = 1;
+
+        await OnStateChanged.InvokeAsync();
+    }
+
+    private async Task HandleStatusChanged(ChangeEventArgs args)
+    {
+        State.SelectedStatus = args.Value?.ToString() ?? string.Empty;
+        State.PageNumber = 1;
+
+        await OnStateChanged.InvokeAsync();
+    }
+
+    private async Task HandleClear()
+    {
+        State.ClearFilters();
+
+        await OnStateChanged.InvokeAsync();
+    }
+
+    public sealed record DataGridStatusOption(string Value, string Label);
+}

@@ -1,0 +1,26 @@
+<button class="inline-flex items-center gap-1 hover:text-slate-900"
+        @onclick="HandleClick">
+    <span>@Title</span>
+    <span class="text-slate-400">@State.GetSortIcon(Column)</span>
+</button>
+
+@code {
+    [Parameter, EditorRequired]
+    public GridState State { get; set; } = new();
+
+    [Parameter, EditorRequired]
+    public string Column { get; set; } = string.Empty;
+
+    [Parameter, EditorRequired]
+    public string Title { get; set; } = string.Empty;
+
+    [Parameter]
+    public EventCallback OnSortChanged { get; set; }
+
+    private async Task HandleClick()
+    {
+        State.SortBy(Column);
+
+        await OnSortChanged.InvokeAsync();
+    }
+}
