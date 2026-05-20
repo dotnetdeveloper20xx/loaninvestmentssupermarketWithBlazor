@@ -15,6 +15,8 @@ public sealed class ApplicationDbContext : DbContext
 
     public DbSet<Borrower> Borrowers => Set<Borrower>();
 
+    public DbSet<Lender> Lenders => Set<Lender>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(ApplicationDbContext).Assembly);
