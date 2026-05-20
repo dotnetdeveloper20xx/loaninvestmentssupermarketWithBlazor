@@ -1,5 +1,6 @@
 @page "/loan-applications"
 @inject LoanApplicationsApiClient LoanApplicationsApiClient
+@inject ToastService ToastService
 
 <PageHeader Title="Loan Applications"
             Subtitle="Manage borrower applications, review status and funding pipeline.">
@@ -315,22 +316,28 @@
 
             if (!response.Success)
             {
-                _workflowError = response.Errors.Count > 0
-                    ? string.Join(", ", response.Errors)
-                    : "Workflow action failed.";
+                var errorMessage = response.Errors.Count > 0
+                                    ? string.Join(", ", response.Errors)
+                                    : "Workflow action failed.";
+
+                ToastService.ShowError("Workflow failed", errorMessage);
+                _workflowError = errorMessage;
 
                 return;
             }
 
-            _workflowMessage = response.Message
-                               ?? response.Data
-                               ?? "Workflow action completed.";
+            var successMessage = response.Message
+                     ?? response.Data
+                     ?? "Workflow action completed.";
+
+            ToastService.ShowSuccess("Workflow completed", successMessage);
 
             await LoadApplicationsAsync();
         }
         catch (Exception exception)
         {
             _workflowError = $"Workflow action failed. {exception.Message}";
+            ToastService.ShowError("Workflow failed", _workflowError);
         }
         finally
         {

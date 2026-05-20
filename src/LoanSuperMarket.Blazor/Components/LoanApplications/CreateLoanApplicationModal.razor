@@ -1,4 +1,5 @@
 @inject LoanApplicationsApiClient LoanApplicationsApiClient
+@inject ToastService ToastService
 
 @if (IsOpen)
 {
@@ -151,13 +152,27 @@
 
         if (!Guid.TryParse(_borrowerIdText, out var borrowerId))
         {
-            _apiErrors.Add("Borrower ID must be a valid GUID.");
+            const string errorMessage = "Borrower ID must be a valid GUID.";
+
+            _apiErrors.Add(errorMessage);
+
+            ToastService.ShowError(
+                "Application failed",
+                errorMessage);
+
             return;
         }
 
         if (!Guid.TryParse(_loanProductIdText, out var loanProductId))
         {
-            _apiErrors.Add("Loan Product ID must be a valid GUID.");
+            const string errorMessage = "Loan Product ID must be a valid GUID.";
+
+            _apiErrors.Add(errorMessage);
+
+            ToastService.ShowError(
+                "Application failed",
+                errorMessage);
+
             return;
         }
 
@@ -171,26 +186,50 @@
 
             if (response is null)
             {
-                _apiErrors.Add("No response received from the API.");
+                const string errorMessage = "No response received from the API.";
+
+                _apiErrors.Add(errorMessage);
+
+                ToastService.ShowError(
+                    "Application failed",
+                    errorMessage);
+
                 return;
             }
 
             if (!response.Success)
             {
-                _apiErrors.AddRange(response.Errors.Count > 0
-                    ? response.Errors
-                    : ["Failed to submit loan application."]);
+                var errorMessage = response.Errors.Count > 0
+                    ? string.Join(", ", response.Errors)
+                    : "Failed to submit loan application.";
+
+                _apiErrors.Add(errorMessage);
+
+                ToastService.ShowError(
+                    "Application failed",
+                    errorMessage);
 
                 return;
             }
 
+            ToastService.ShowSuccess(
+                "Application submitted",
+                "Loan application has been submitted successfully.");
+
             ResetForm();
+
             await OnCreated.InvokeAsync();
             await OnClose.InvokeAsync();
         }
         catch (Exception exception)
         {
-            _apiErrors.Add($"Unable to submit loan application. {exception.Message}");
+            var errorMessage = $"Unable to submit loan application. {exception.Message}";
+
+            _apiErrors.Add(errorMessage);
+
+            ToastService.ShowError(
+                "Application failed",
+                errorMessage);
         }
         finally
         {
