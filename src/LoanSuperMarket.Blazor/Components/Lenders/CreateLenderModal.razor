@@ -32,65 +32,45 @@
                     </ul>
                 </div>
             }
-
             <EditForm Model="_model" OnValidSubmit="CreateAsync">
                 <DataAnnotationsValidator />
                 <ValidationSummary class="mt-6 rounded-2xl border border-orange-200 bg-orange-50 p-4 text-sm text-orange-700" />
 
-                <div class="mt-8 grid grid-cols-1 gap-5 md:grid-cols-2">
-                    <div class="md:col-span-2">
-                        <label class="mb-2 block text-sm font-semibold text-slate-700">Company name</label>
-                        <InputText class="@InputClass" @bind-Value="_model.CompanyName" />
-                        <ValidationMessage For="@(() => _model.CompanyName)" class="mt-2 text-sm text-red-600" />
-                    </div>
+                <FormSection>
+                    <AppTextInput Label="Company name"
+                                  WrapperClass="md:col-span-2"
+                                  Value="@_model.CompanyName"
+                                  ValueChanged="value => _model.CompanyName = value"
+                                  ValueExpression="@(() => _model.CompanyName)" />
 
-                    <div class="md:col-span-2">
-                        <label class="mb-2 block text-sm font-semibold text-slate-700">Contact name</label>
-                        <InputText class="@InputClass" @bind-Value="_model.ContactName" />
-                        <ValidationMessage For="@(() => _model.ContactName)" class="mt-2 text-sm text-red-600" />
-                    </div>
+                    <AppTextInput Label="Contact name"
+                                  WrapperClass="md:col-span-2"
+                                  Value="@_model.ContactName"
+                                  ValueChanged="value => _model.ContactName = value"
+                                  ValueExpression="@(() => _model.ContactName)" />
 
-                    <div class="md:col-span-2">
-                        <label class="mb-2 block text-sm font-semibold text-slate-700">Email</label>
-                        <InputText class="@InputClass" @bind-Value="_model.Email" />
-                        <ValidationMessage For="@(() => _model.Email)" class="mt-2 text-sm text-red-600" />
-                    </div>
+                    <AppTextInput Label="Email"
+                                  WrapperClass="md:col-span-2"
+                                  Value="@_model.Email"
+                                  ValueChanged="value => _model.Email = value"
+                                  ValueExpression="@(() => _model.Email)" />
 
-                    <div>
-                        <label class="mb-2 block text-sm font-semibold text-slate-700">Phone number</label>
-                        <InputText class="@InputClass" @bind-Value="_model.PhoneNumber" />
-                        <ValidationMessage For="@(() => _model.PhoneNumber)" class="mt-2 text-sm text-red-600" />
-                    </div>
+                    <AppTextInput Label="Phone number"
+                                  Value="@_model.PhoneNumber"
+                                  ValueChanged="value => _model.PhoneNumber = value"
+                                  ValueExpression="@(() => _model.PhoneNumber)" />
 
-                    <div>
-                        <label class="mb-2 block text-sm font-semibold text-slate-700">Available funds</label>
-                        <InputNumber class="@InputClass" @bind-Value="_model.AvailableFunds" />
-                        <ValidationMessage For="@(() => _model.AvailableFunds)" class="mt-2 text-sm text-red-600" />
-                    </div>
-                </div>
+                    <AppNumberInput TValue="decimal"
+                                    Label="Available funds"
+                                    Value="@_model.AvailableFunds"
+                                    ValueChanged="value => _model.AvailableFunds = value"
+                                    ValueExpression="@(() => _model.AvailableFunds)" />
+                </FormSection>
 
-                <div class="mt-8 flex justify-end gap-3 border-t border-slate-200 pt-5">
-                    <button type="button"
-                            class="rounded-xl px-5 py-3 text-sm font-semibold text-slate-600 hover:bg-slate-100"
-                            @onclick="CloseAsync"
-                            disabled="@_isSaving">
-                        Cancel
-                    </button>
-
-                    <button type="submit"
-                            class="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-5 py-3 text-sm font-semibold text-white shadow-sm hover:bg-blue-700 disabled:opacity-60"
-                            disabled="@_isSaving">
-                        @if (_isSaving)
-                        {
-                            <span class="h-4 w-4 animate-spin rounded-full border-2 border-blue-200 border-t-white"></span>
-                            <span>Saving...</span>
-                        }
-                        else
-                        {
-                            <span>Create Lender</span>
-                        }
-                    </button>
-                </div>
+                <FormActions IsSaving="_isSaving"
+                             SubmitText="Create Lender"
+                             SavingText="Saving..."
+                             OnCancel="CloseAsync" />
             </EditForm>
         </div>
     </div>
