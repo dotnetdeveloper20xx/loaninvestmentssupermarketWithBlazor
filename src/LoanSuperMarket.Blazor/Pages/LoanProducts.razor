@@ -19,14 +19,64 @@
     </div>
 }
 
+<div class="mb-6 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+    <div class="grid grid-cols-1 gap-4 lg:grid-cols-4">
+        <div class="lg:col-span-2">
+            <label class="mb-2 block text-sm font-semibold text-slate-700">
+                Search products
+            </label>
+            <input class="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
+                   placeholder="Search by title or description..."
+                   @bind="_searchText"
+                   @bind:event="oninput" />
+        </div>
+
+        <div>
+            <label class="mb-2 block text-sm font-semibold text-slate-700">
+                Status
+            </label>
+            <select class="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 shadow-sm outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
+                    @bind="_selectedStatus">
+                <option value="">All statuses</option>
+                <option value="Draft">Draft</option>
+                <option value="PendingApproval">Pending Approval</option>
+                <option value="Approved">Approved</option>
+                <option value="Published">Published</option>
+                <option value="Archived">Archived</option>
+            </select>
+        </div>
+
+        <div class="flex items-end">
+            <button class="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm font-semibold text-slate-700 shadow-sm hover:bg-slate-50"
+                    @onclick="ClearFilters">
+                Clear Filters
+            </button>
+        </div>
+    </div>
+
+    <div class="mt-4 flex flex-col gap-2 text-sm text-slate-500 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+            Showing <span class="font-semibold text-slate-800">@FilteredLoanProducts.Count</span>
+            of <span class="font-semibold text-slate-800">@_loanProducts.Count</span> products
+        </div>
+
+        @if (!string.IsNullOrWhiteSpace(_searchText) || !string.IsNullOrWhiteSpace(_selectedStatus))
+        {
+            <div class="text-blue-600">
+                Filters active
+            </div>
+        }
+    </div>
+</div>
+
 <AppDataTable Title="Loan Product Management"
               Subtitle="Operational view of lender products, marketplace status and lending criteria."
               IsLoading="_isLoading"
-              IsEmpty="@(!_isLoading && _loanProducts.Count == 0)"
+              IsEmpty="@(!_isLoading && FilteredLoanProducts.Count == 0)"
               LoadingText="Loading loan products..."
               EmptyIcon="🏦"
               EmptyTitle="No loan products found"
-              EmptyMessage="Once lenders create loan products, they will appear here for review and management.">
+              EmptyMessage="No products match the current search or filter criteria.">
 
     <HeaderActions>
         <button class="rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm hover:bg-slate-50"
@@ -36,24 +86,72 @@
     </HeaderActions>
 
     <EmptyActions>
-        <button class="rounded-xl bg-blue-600 px-5 py-3 text-sm font-semibold text-white shadow-sm hover:bg-blue-700"
-                @onclick="OpenCreateModal">
-            Create First Loan Product
-        </button>
+        @if (_loanProducts.Count == 0)
+        {
+            <button class="rounded-xl bg-blue-600 px-5 py-3 text-sm font-semibold text-white shadow-sm hover:bg-blue-700"
+                    @onclick="OpenCreateModal">
+                Create First Loan Product
+            </button>
+        }
+        else
+        {
+            <button class="rounded-xl border border-slate-300 bg-white px-5 py-3 text-sm font-semibold text-slate-700 shadow-sm hover:bg-slate-50"
+                    @onclick="ClearFilters">
+                Clear Filters
+            </button>
+        }
     </EmptyActions>
 
     <HeaderTemplate>
-        <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">Product</th>
-        <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">Amount Range</th>
-        <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">Interest</th>
-        <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">Term</th>
-        <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">Status</th>
-        <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">Created</th>
-        <th class="px-6 py-4 text-right text-xs font-semibold uppercase tracking-wide text-slate-500">Actions</th>
+        <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+            <button class="inline-flex items-center gap-1 hover:text-slate-900"
+                    @onclick="@(() => SortBy("Title"))">
+                Product @GetSortIcon("Title")
+            </button>
+        </th>
+
+        <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+            <button class="inline-flex items-center gap-1 hover:text-slate-900"
+                    @onclick="@(() => SortBy("MinimumAmount"))">
+                Amount Range @GetSortIcon("MinimumAmount")
+            </button>
+        </th>
+
+        <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+            <button class="inline-flex items-center gap-1 hover:text-slate-900"
+                    @onclick="@(() => SortBy("InterestRate"))">
+                Interest @GetSortIcon("InterestRate")
+            </button>
+        </th>
+
+        <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+            <button class="inline-flex items-center gap-1 hover:text-slate-900"
+                    @onclick="@(() => SortBy("MaximumTermMonths"))">
+                Term @GetSortIcon("MaximumTermMonths")
+            </button>
+        </th>
+
+        <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+            <button class="inline-flex items-center gap-1 hover:text-slate-900"
+                    @onclick="@(() => SortBy("Status"))">
+                Status @GetSortIcon("Status")
+            </button>
+        </th>
+
+        <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+            <button class="inline-flex items-center gap-1 hover:text-slate-900"
+                    @onclick="@(() => SortBy("CreatedAtUtc"))">
+                Created @GetSortIcon("CreatedAtUtc")
+            </button>
+        </th>
+
+        <th class="px-6 py-4 text-right text-xs font-semibold uppercase tracking-wide text-slate-500">
+            Actions
+        </th>
     </HeaderTemplate>
 
     <RowTemplate>
-        @foreach (var product in _loanProducts)
+        @foreach (var product in FilteredLoanProducts)
         {
             <tr class="hover:bg-slate-50">
                 <td class="px-6 py-4">
@@ -107,6 +205,56 @@
     private bool _isLoading = true;
     private bool _isCreateModalOpen;
     private string? _errorMessage;
+    private string _searchText = string.Empty;
+    private string _selectedStatus = string.Empty;
+    private string _sortColumn = "CreatedAtUtc";
+    private bool _sortAscending;
+
+    private List<LoanProductDto> FilteredLoanProducts
+    {
+        get
+        {
+            var query = _loanProducts.AsEnumerable();
+
+            if (!string.IsNullOrWhiteSpace(_searchText))
+            {
+                query = query.Where(product =>
+                    product.Title.Contains(_searchText, StringComparison.OrdinalIgnoreCase)
+                    || product.Description.Contains(_searchText, StringComparison.OrdinalIgnoreCase));
+            }
+
+            if (!string.IsNullOrWhiteSpace(_selectedStatus))
+            {
+                query = query.Where(product =>
+                    product.Status.Equals(_selectedStatus, StringComparison.OrdinalIgnoreCase));
+            }
+
+            query = (_sortColumn, _sortAscending) switch
+            {
+                ("Title", true) => query.OrderBy(product => product.Title),
+                ("Title", false) => query.OrderByDescending(product => product.Title),
+
+                ("MinimumAmount", true) => query.OrderBy(product => product.MinimumAmount),
+                ("MinimumAmount", false) => query.OrderByDescending(product => product.MinimumAmount),
+
+                ("InterestRate", true) => query.OrderBy(product => product.InterestRate),
+                ("InterestRate", false) => query.OrderByDescending(product => product.InterestRate),
+
+                ("MaximumTermMonths", true) => query.OrderBy(product => product.MaximumTermMonths),
+                ("MaximumTermMonths", false) => query.OrderByDescending(product => product.MaximumTermMonths),
+
+                ("Status", true) => query.OrderBy(product => product.Status),
+                ("Status", false) => query.OrderByDescending(product => product.Status),
+
+                ("CreatedAtUtc", true) => query.OrderBy(product => product.CreatedAtUtc),
+                ("CreatedAtUtc", false) => query.OrderByDescending(product => product.CreatedAtUtc),
+
+                _ => query.OrderByDescending(product => product.CreatedAtUtc)
+            };
+
+            return query.ToList();
+        }
+    }
 
     protected override async Task OnInitializedAsync()
     {
@@ -167,5 +315,34 @@
     private void ViewDetails(Guid id)
     {
         NavigationManager.NavigateTo($"/loan-products/{id}");
+    }
+
+    private void ClearFilters()
+    {
+        _searchText = string.Empty;
+        _selectedStatus = string.Empty;
+    }
+
+    private void SortBy(string column)
+    {
+        if (_sortColumn == column)
+        {
+            _sortAscending = !_sortAscending;
+        }
+        else
+        {
+            _sortColumn = column;
+            _sortAscending = true;
+        }
+    }
+
+    private string GetSortIcon(string column)
+    {
+        if (_sortColumn != column)
+        {
+            return "↕";
+        }
+
+        return _sortAscending ? "↑" : "↓";
     }
 }

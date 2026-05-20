@@ -737,6 +737,10 @@ video {
   align-items: flex-start;
 }
 
+.items-end {
+  align-items: flex-end;
+}
+
 .items-center {
   align-items: center;
 }
@@ -751,6 +755,10 @@ video {
 
 .justify-between {
   justify-content: space-between;
+}
+
+.gap-1 {
+  gap: 0.25rem;
 }
 
 .gap-2 {
@@ -932,6 +940,11 @@ video {
   border-top-color: rgb(21 128 61 / var(--tw-border-opacity, 1));
 }
 
+.border-t-red-700 {
+  --tw-border-opacity: 1;
+  border-top-color: rgb(185 28 28 / var(--tw-border-opacity, 1));
+}
+
 .border-t-slate-700 {
   --tw-border-opacity: 1;
   border-top-color: rgb(51 65 85 / var(--tw-border-opacity, 1));
@@ -940,11 +953,6 @@ video {
 .border-t-white {
   --tw-border-opacity: 1;
   border-top-color: rgb(255 255 255 / var(--tw-border-opacity, 1));
-}
-
-.border-t-red-700 {
-  --tw-border-opacity: 1;
-  border-top-color: rgb(185 28 28 / var(--tw-border-opacity, 1));
 }
 
 .bg-\[\#071A2F\] {
@@ -1338,6 +1346,10 @@ video {
   outline-offset: 2px;
 }
 
+.filter {
+  filter: var(--tw-blur) var(--tw-brightness) var(--tw-contrast) var(--tw-grayscale) var(--tw-hue-rotate) var(--tw-invert) var(--tw-saturate) var(--tw-sepia) var(--tw-drop-shadow);
+}
+
 .backdrop-blur-sm {
   --tw-backdrop-blur: blur(4px);
   -webkit-backdrop-filter: var(--tw-backdrop-blur) var(--tw-backdrop-brightness) var(--tw-backdrop-contrast) var(--tw-backdrop-grayscale) var(--tw-backdrop-hue-rotate) var(--tw-backdrop-invert) var(--tw-backdrop-opacity) var(--tw-backdrop-saturate) var(--tw-backdrop-sepia);
@@ -1417,6 +1429,11 @@ body {
   color: rgb(51 65 85 / var(--tw-text-opacity, 1));
 }
 
+.hover\:text-slate-900:hover {
+  --tw-text-opacity: 1;
+  color: rgb(15 23 42 / var(--tw-text-opacity, 1));
+}
+
 .focus\:border-blue-500:focus {
   --tw-border-opacity: 1;
   border-color: rgb(59 130 246 / var(--tw-border-opacity, 1));
@@ -1470,12 +1487,20 @@ body {
 }
 
 @media (min-width: 1024px) {
+  .lg\:col-span-2 {
+    grid-column: span 2 / span 2;
+  }
+
   .lg\:flex {
     display: flex;
   }
 
   .lg\:w-72 {
     width: 18rem;
+  }
+
+  .lg\:grid-cols-4 {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 
   .lg\:flex-col {
