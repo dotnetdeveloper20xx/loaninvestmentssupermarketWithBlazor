@@ -1,0 +1,40 @@
+<div class="@WrapperClass">
+    <label class="mb-2 block text-sm font-semibold text-slate-700">
+        @Label
+    </label>
+
+    <InputText class="@InputClass"
+               placeholder="@Placeholder"
+               Value="@Value"
+               ValueChanged="@ValueChanged"
+               ValueExpression="@ValueExpression" />
+
+    @if (ValueExpression is not null)
+    {
+        <ValidationMessage For="@ValueExpression"
+                           class="mt-2 text-sm text-red-600" />
+    }
+</div>
+
+@code {
+    private const string InputClass =
+        "w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-100";
+
+    [Parameter]
+    public string Label { get; set; } = string.Empty;
+
+    [Parameter]
+    public string Placeholder { get; set; } = string.Empty;
+
+    [Parameter]
+    public string Value { get; set; } = string.Empty;
+
+    [Parameter]
+    public EventCallback<string> ValueChanged { get; set; }
+
+    [Parameter]
+    public Expression<Func<string>>? ValueExpression { get; set; }
+
+    [Parameter]
+    public string WrapperClass { get; set; } = string.Empty;
+}

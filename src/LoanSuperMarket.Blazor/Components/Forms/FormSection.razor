@@ -1,0 +1,8 @@
+<div class="mt-8 grid grid-cols-1 gap-5 md:grid-cols-2">
+    @ChildContent
+</div>
+
+@code {
+    [Parameter]
+    public RenderFragment? ChildContent { get; set; }
+}

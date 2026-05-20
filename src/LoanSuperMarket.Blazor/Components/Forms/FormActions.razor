@@ -1,0 +1,39 @@
+<div class="mt-8 flex justify-end gap-3 border-t border-slate-200 pt-5">
+    <button type="button"
+            class="rounded-xl px-5 py-3 text-sm font-semibold text-slate-600 hover:bg-slate-100 disabled:opacity-60"
+            @onclick="OnCancel"
+            disabled="@IsSaving">
+        @CancelText
+    </button>
+
+    <button type="submit"
+            class="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-5 py-3 text-sm font-semibold text-white shadow-sm hover:bg-blue-700 disabled:opacity-60"
+            disabled="@IsSaving">
+        @if (IsSaving)
+        {
+            <span class="h-4 w-4 animate-spin rounded-full border-2 border-blue-200 border-t-white"></span>
+            <span>@SavingText</span>
+        }
+        else
+        {
+            <span>@SubmitText</span>
+        }
+    </button>
+</div>
+
+@code {
+    [Parameter]
+    public bool IsSaving { get; set; }
+
+    [Parameter]
+    public EventCallback OnCancel { get; set; }
+
+    [Parameter]
+    public string CancelText { get; set; } = "Cancel";
+
+    [Parameter]
+    public string SubmitText { get; set; } = "Save";
+
+    [Parameter]
+    public string SavingText { get; set; } = "Saving...";
+}

@@ -37,60 +37,38 @@
                 <DataAnnotationsValidator />
                 <ValidationSummary class="mt-6 rounded-2xl border border-orange-200 bg-orange-50 p-4 text-sm text-orange-700" />
 
-                <div class="mt-8 grid grid-cols-1 gap-5 md:grid-cols-2">
-                    <div>
-                        <label class="mb-2 block text-sm font-semibold text-slate-700">First name</label>
-                        <InputText class="@InputClass" @bind-Value="_model.FirstName" />
-                        <ValidationMessage For="@(() => _model.FirstName)" class="mt-2 text-sm text-red-600" />
-                    </div>
+                <FormSection>
+                    <AppTextInput Label="First name"
+                                  Value="@_model.FirstName"
+                                  ValueChanged="value => _model.FirstName = value"
+                                  ValueExpression="@(() => _model.FirstName)" />
 
-                    <div>
-                        <label class="mb-2 block text-sm font-semibold text-slate-700">Last name</label>
-                        <InputText class="@InputClass" @bind-Value="_model.LastName" />
-                        <ValidationMessage For="@(() => _model.LastName)" class="mt-2 text-sm text-red-600" />
-                    </div>
+                    <AppTextInput Label="Last name"
+                                  Value="@_model.LastName"
+                                  ValueChanged="value => _model.LastName = value"
+                                  ValueExpression="@(() => _model.LastName)" />
 
-                    <div class="md:col-span-2">
-                        <label class="mb-2 block text-sm font-semibold text-slate-700">Email</label>
-                        <InputText class="@InputClass" @bind-Value="_model.Email" />
-                        <ValidationMessage For="@(() => _model.Email)" class="mt-2 text-sm text-red-600" />
-                    </div>
+                    <AppTextInput Label="Email"
+                                  WrapperClass="md:col-span-2"
+                                  Value="@_model.Email"
+                                  ValueChanged="value => _model.Email = value"
+                                  ValueExpression="@(() => _model.Email)" />
 
-                    <div>
-                        <label class="mb-2 block text-sm font-semibold text-slate-700">Phone number</label>
-                        <InputText class="@InputClass" @bind-Value="_model.PhoneNumber" />
-                        <ValidationMessage For="@(() => _model.PhoneNumber)" class="mt-2 text-sm text-red-600" />
-                    </div>
+                    <AppTextInput Label="Phone number"
+                                  Value="@_model.PhoneNumber"
+                                  ValueChanged="value => _model.PhoneNumber = value"
+                                  ValueExpression="@(() => _model.PhoneNumber)" />
 
-                    <div>
-                        <label class="mb-2 block text-sm font-semibold text-slate-700">Date of birth</label>
-                        <InputDate class="@InputClass" @bind-Value="_model.DateOfBirth" />
-                        <ValidationMessage For="@(() => _model.DateOfBirth)" class="mt-2 text-sm text-red-600" />
-                    </div>
-                </div>
+                    <AppDateInput Label="Date of birth"
+                                  Value="@_model.DateOfBirth"
+                                  ValueChanged="value => _model.DateOfBirth = value"
+                                  ValueExpression="@(() => _model.DateOfBirth)" />
+                </FormSection>
 
-                <div class="mt-8 flex justify-end gap-3 border-t border-slate-200 pt-5">
-                    <button type="button"
-                            class="rounded-xl px-5 py-3 text-sm font-semibold text-slate-600 hover:bg-slate-100"
-                            @onclick="CloseAsync"
-                            disabled="@_isSaving">
-                        Cancel
-                    </button>
-
-                    <button type="submit"
-                            class="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-5 py-3 text-sm font-semibold text-white shadow-sm hover:bg-blue-700 disabled:opacity-60"
-                            disabled="@_isSaving">
-                        @if (_isSaving)
-                        {
-                            <span class="h-4 w-4 animate-spin rounded-full border-2 border-blue-200 border-t-white"></span>
-                            <span>Saving...</span>
-                        }
-                        else
-                        {
-                            <span>Create Borrower</span>
-                        }
-                    </button>
-                </div>
+                <FormActions IsSaving="_isSaving"
+                             SubmitText="Create Borrower"
+                             SavingText="Saving..."
+                             OnCancel="CloseAsync" />
             </EditForm>
         </div>
     </div>
