@@ -1,6 +1,7 @@
 using LoanSuperMarket.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 
+
 namespace LoanSuperMarket.Infrastructure.Persistence;
 
 public sealed class ApplicationDbContext : DbContext
@@ -11,6 +12,8 @@ public sealed class ApplicationDbContext : DbContext
     }
 
     public DbSet<LoanProduct> LoanProducts => Set<LoanProduct>();
+
+    public DbSet<Borrower> Borrowers => Set<Borrower>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

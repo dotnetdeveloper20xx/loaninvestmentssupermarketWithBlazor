@@ -1,0 +1,180 @@
+@inject BorrowersApiClient BorrowersApiClient
+
+@if (IsOpen)
+{
+    <div class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 px-4 backdrop-blur-sm">
+        <div class="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-2xl bg-white p-8 shadow-2xl">
+            <div class="flex items-start justify-between gap-4">
+                <div>
+                    <h3 class="text-2xl font-bold text-slate-900">Create Borrower</h3>
+                    <p class="mt-2 text-sm text-slate-500">
+                        Add a borrower profile ready for verification and future loan applications.
+                    </p>
+                </div>
+
+                <button type="button"
+                        class="rounded-full p-2 text-slate-400 hover:bg-slate-100 hover:text-slate-700"
+                        @onclick="CloseAsync">
+                    ✕
+                </button>
+            </div>
+
+            @if (_apiErrors.Count > 0)
+            {
+                <div class="mt-6 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+                    <strong>Unable to create borrower</strong>
+                    <ul class="mt-2 list-disc pl-5">
+                        @foreach (var error in _apiErrors)
+                        {
+                            <li>@error</li>
+                        }
+                    </ul>
+                </div>
+            }
+
+            <EditForm Model="_model" OnValidSubmit="CreateAsync">
+                <DataAnnotationsValidator />
+                <ValidationSummary class="mt-6 rounded-2xl border border-orange-200 bg-orange-50 p-4 text-sm text-orange-700" />
+
+                <div class="mt-8 grid grid-cols-1 gap-5 md:grid-cols-2">
+                    <div>
+                        <label class="mb-2 block text-sm font-semibold text-slate-700">First name</label>
+                        <InputText class="@InputClass" @bind-Value="_model.FirstName" />
+                        <ValidationMessage For="@(() => _model.FirstName)" class="mt-2 text-sm text-red-600" />
+                    </div>
+
+                    <div>
+                        <label class="mb-2 block text-sm font-semibold text-slate-700">Last name</label>
+                        <InputText class="@InputClass" @bind-Value="_model.LastName" />
+                        <ValidationMessage For="@(() => _model.LastName)" class="mt-2 text-sm text-red-600" />
+                    </div>
+
+                    <div class="md:col-span-2">
+                        <label class="mb-2 block text-sm font-semibold text-slate-700">Email</label>
+                        <InputText class="@InputClass" @bind-Value="_model.Email" />
+                        <ValidationMessage For="@(() => _model.Email)" class="mt-2 text-sm text-red-600" />
+                    </div>
+
+                    <div>
+                        <label class="mb-2 block text-sm font-semibold text-slate-700">Phone number</label>
+                        <InputText class="@InputClass" @bind-Value="_model.PhoneNumber" />
+                        <ValidationMessage For="@(() => _model.PhoneNumber)" class="mt-2 text-sm text-red-600" />
+                    </div>
+
+                    <div>
+                        <label class="mb-2 block text-sm font-semibold text-slate-700">Date of birth</label>
+                        <InputDate class="@InputClass" @bind-Value="_model.DateOfBirth" />
+                        <ValidationMessage For="@(() => _model.DateOfBirth)" class="mt-2 text-sm text-red-600" />
+                    </div>
+                </div>
+
+                <div class="mt-8 flex justify-end gap-3 border-t border-slate-200 pt-5">
+                    <button type="button"
+                            class="rounded-xl px-5 py-3 text-sm font-semibold text-slate-600 hover:bg-slate-100"
+                            @onclick="CloseAsync"
+                            disabled="@_isSaving">
+                        Cancel
+                    </button>
+
+                    <button type="submit"
+                            class="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-5 py-3 text-sm font-semibold text-white shadow-sm hover:bg-blue-700 disabled:opacity-60"
+                            disabled="@_isSaving">
+                        @if (_isSaving)
+                        {
+                            <span class="h-4 w-4 animate-spin rounded-full border-2 border-blue-200 border-t-white"></span>
+                            <span>Saving...</span>
+                        }
+                        else
+                        {
+                            <span>Create Borrower</span>
+                        }
+                    </button>
+                </div>
+            </EditForm>
+        </div>
+    </div>
+}
+
+@code {
+    private const string InputClass =
+        "w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-100";
+
+    private readonly List<string> _apiErrors = [];
+    private CreateBorrowerRequest _model = new();
+    private bool _isSaving;
+
+    [Parameter]
+    public bool IsOpen { get; set; }
+
+    [Parameter]
+    public EventCallback OnClose { get; set; }
+
+    [Parameter]
+    public EventCallback OnCreated { get; set; }
+
+    protected override void OnParametersSet()
+    {
+        if (IsOpen && string.IsNullOrWhiteSpace(_model.FirstName) && !_isSaving)
+        {
+            ResetForm();
+        }
+    }
+
+    private void ResetForm()
+    {
+        _apiErrors.Clear();
+
+        _model = new CreateBorrowerRequest
+        {
+            DateOfBirth = DateTime.Today.AddYears(-25)
+        };
+    }
+
+    private async Task CloseAsync()
+    {
+        if (_isSaving)
+        {
+            return;
+        }
+
+        await OnClose.InvokeAsync();
+    }
+
+    private async Task CreateAsync()
+    {
+        _apiErrors.Clear();
+        _isSaving = true;
+
+        try
+        {
+            var response = await BorrowersApiClient.CreateBorrowerAsync(_model);
+
+            if (response is null)
+            {
+                _apiErrors.Add("No response received from the API.");
+                return;
+            }
+
+            if (!response.Success)
+            {
+                _apiErrors.AddRange(response.Errors.Count > 0
+                    ? response.Errors
+                    : ["Failed to create borrower."]);
+
+                return;
+            }
+
+            ResetForm();
+            await OnCreated.InvokeAsync();
+            await OnClose.InvokeAsync();
+        }
+        catch (Exception exception)
+        {
+            _apiErrors.Add($"Unable to create borrower. {exception.Message}");
+        }
+        finally
+        {
+            _isSaving = false;
+        }
+    }
+}

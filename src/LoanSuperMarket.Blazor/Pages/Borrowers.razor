@@ -1,0 +1,217 @@
+@page "/borrowers"
+@inject BorrowersApiClient BorrowersApiClient
+
+<PageHeader Title="Borrowers"
+            Subtitle="Manage borrower profiles, verification status and onboarding records.">
+    <ActionContent>
+        <button class="rounded-xl bg-blue-600 px-5 py-3 text-sm font-semibold text-white shadow-sm hover:bg-blue-700"
+                @onclick="OpenCreateModal">
+            + New Borrower
+        </button>
+    </ActionContent>
+</PageHeader>
+
+@if (!string.IsNullOrWhiteSpace(_errorMessage))
+{
+    <div class="mb-6 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+        @_errorMessage
+    </div>
+}
+
+<div class="mb-6 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+    <div class="grid grid-cols-1 gap-4 lg:grid-cols-4">
+        <div class="lg:col-span-2">
+            <label class="mb-2 block text-sm font-semibold text-slate-700">Search borrowers</label>
+            <input class="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
+                   placeholder="Search by name, email or phone..."
+                   @bind="_searchText"
+                   @bind:event="oninput" />
+        </div>
+
+        <div>
+            <label class="mb-2 block text-sm font-semibold text-slate-700">Status</label>
+            <select class="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 shadow-sm outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
+                    @bind="_selectedStatus">
+                <option value="">All statuses</option>
+                <option value="PendingVerification">Pending Verification</option>
+                <option value="Verified">Verified</option>
+                <option value="Suspended">Suspended</option>
+                <option value="Archived">Archived</option>
+            </select>
+        </div>
+
+        <div class="flex items-end">
+            <button class="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm font-semibold text-slate-700 shadow-sm hover:bg-slate-50"
+                    @onclick="ClearFilters">
+                Clear Filters
+            </button>
+        </div>
+    </div>
+
+    <div class="mt-4 text-sm text-slate-500">
+        Showing <span class="font-semibold text-slate-800">@FilteredBorrowers.Count</span>
+        of <span class="font-semibold text-slate-800">@_borrowers.Count</span> borrowers
+    </div>
+</div>
+
+<AppDataTable Title="Borrower Management"
+              Subtitle="Operational borrower list for onboarding and verification workflows."
+              IsLoading="_isLoading"
+              IsEmpty="@(!_isLoading && FilteredBorrowers.Count == 0)"
+              LoadingText="Loading borrowers..."
+              EmptyIcon="👤"
+              EmptyTitle="No borrowers found"
+              EmptyMessage="No borrowers match the current search or filter criteria.">
+
+    <HeaderActions>
+        <button class="rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm hover:bg-slate-50"
+                @onclick="LoadBorrowersAsync">
+            Refresh
+        </button>
+    </HeaderActions>
+
+    <EmptyActions>
+        <button class="rounded-xl bg-blue-600 px-5 py-3 text-sm font-semibold text-white shadow-sm hover:bg-blue-700"
+                @onclick="OpenCreateModal">
+            Create Borrower
+        </button>
+    </EmptyActions>
+
+    <HeaderTemplate>
+        <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">Borrower</th>
+        <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">Contact</th>
+        <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">Date of Birth</th>
+        <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">Status</th>
+        <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">Created</th>
+    </HeaderTemplate>
+
+    <RowTemplate>
+        @foreach (var borrower in FilteredBorrowers)
+        {
+            <tr class="hover:bg-slate-50">
+                <td class="px-6 py-4">
+                    <div class="font-semibold text-slate-900">@borrower.FullName</div>
+                    <div class="mt-1 text-sm text-slate-500">@borrower.Id</div>
+                </td>
+
+                <td class="px-6 py-4">
+                    <div class="text-sm font-medium text-slate-900">@borrower.Email</div>
+                    <div class="mt-1 text-sm text-slate-500">@borrower.PhoneNumber</div>
+                </td>
+
+                <td class="px-6 py-4 text-sm text-slate-700">
+                    @borrower.DateOfBirth.ToString("dd MMM yyyy")
+                </td>
+
+                <td class="px-6 py-4">
+                    <StatusBadge Status="@borrower.Status" />
+                </td>
+
+                <td class="px-6 py-4 text-sm text-slate-500">
+                    @borrower.CreatedAtUtc.ToLocalTime().ToString("dd MMM yyyy")
+                </td>
+            </tr>
+        }
+    </RowTemplate>
+</AppDataTable>
+
+<CreateBorrowerModal IsOpen="_isCreateModalOpen"
+                     OnClose="CloseCreateModal"
+                     OnCreated="HandleBorrowerCreated" />
+
+@code {
+    private List<BorrowerDto> _borrowers = [];
+    private bool _isLoading = true;
+    private bool _isCreateModalOpen;
+    private string? _errorMessage;
+    private string _searchText = string.Empty;
+    private string _selectedStatus = string.Empty;
+
+    private List<BorrowerDto> FilteredBorrowers
+    {
+        get
+        {
+            var query = _borrowers.AsEnumerable();
+
+            if (!string.IsNullOrWhiteSpace(_searchText))
+            {
+                query = query.Where(borrower =>
+                    borrower.FullName.Contains(_searchText, StringComparison.OrdinalIgnoreCase)
+                    || borrower.Email.Contains(_searchText, StringComparison.OrdinalIgnoreCase)
+                    || borrower.PhoneNumber.Contains(_searchText, StringComparison.OrdinalIgnoreCase));
+            }
+
+            if (!string.IsNullOrWhiteSpace(_selectedStatus))
+            {
+                query = query.Where(borrower =>
+                    borrower.Status.Equals(_selectedStatus, StringComparison.OrdinalIgnoreCase));
+            }
+
+            return query
+                .OrderByDescending(x => x.CreatedAtUtc)
+                .ToList();
+        }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadBorrowersAsync();
+    }
+
+    private async Task LoadBorrowersAsync()
+    {
+        _isLoading = true;
+        _errorMessage = null;
+
+        try
+        {
+            var response = await BorrowersApiClient.GetBorrowersAsync();
+
+            if (response is null)
+            {
+                _errorMessage = "No response received from the API.";
+                return;
+            }
+
+            if (!response.Success)
+            {
+                _errorMessage = response.Errors.Count > 0
+                    ? string.Join(", ", response.Errors)
+                    : "Failed to load borrowers.";
+
+                return;
+            }
+
+            _borrowers = response.Data?.ToList() ?? [];
+        }
+        catch (Exception exception)
+        {
+            _errorMessage = $"Unable to load borrowers. {exception.Message}";
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private void OpenCreateModal()
+    {
+        _isCreateModalOpen = true;
+    }
+
+    private void CloseCreateModal()
+    {
+        _isCreateModalOpen = false;
+    }
+
+    private async Task HandleBorrowerCreated()
+    {
+        await LoadBorrowersAsync();
+    }
+
+    private void ClearFilters()
+    {
+        _searchText = string.Empty;
+        _selectedStatus = string.Empty;
+    }
+}
