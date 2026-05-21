@@ -1,4 +1,7 @@
 using LoanSuperMarket.Domain.Entities;
+using LoanSuperMarket.Shared.Borrowers;
+using LoanSuperMarket.Shared.Common;
+using LoanSuperMarket.Shared.Grids;
 
 namespace LoanSuperMarket.Application.Common.Interfaces;
 
@@ -13,4 +16,8 @@ public interface IBorrowerRepository
     Task<bool> EmailExistsAsync(string email, CancellationToken cancellationToken);
 
     Task SaveChangesAsync(CancellationToken cancellationToken);
+
+    Task<PagedResult<BorrowerDto>> GetPagedAsync(
+    GridQueryRequest request,
+    CancellationToken cancellationToken);
 }
