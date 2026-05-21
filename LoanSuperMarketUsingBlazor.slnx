@@ -7,6 +7,9 @@
     <Project Path="src/LoanSuperMarket.Infrastructure/LoanSuperMarket.Infrastructure.csproj" />
     <Project Path="src/LoanSuperMarket.Shared/LoanSuperMarket.Shared.csproj" />
   </Folder>
+  <Folder Name="/src/Docs/">
+    <File Path="ProjectProgress.md" />
+  </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/LoanSuperMarket.Api.Tests/LoanSuperMarket.Api.Tests.csproj" />
     <Project Path="tests/LoanSuperMarket.Application.Tests/LoanSuperMarket.Application.Tests.csproj" />
