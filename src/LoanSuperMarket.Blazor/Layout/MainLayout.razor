@@ -1,4 +1,6 @@
 ﻿@inherits LayoutComponentBase
+@inject NavigationManager NavigationManager
+@inject AuthApiClient AuthApiClient
 
 <div class="page-shell">
     <div class="flex min-h-screen">
@@ -14,62 +16,173 @@
                 </div>
             </div>
 
-            <nav class="flex-1 px-4 py-6 space-y-1">
-                <NavLink href="" Match="NavLinkMatch.All"
-                         class="flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-blue-100 hover:bg-white/10"
-                         activeClass="bg-[#2563EB] text-white shadow-lg shadow-blue-900/30">
-                    <span>📊</span>
-                    <span>Dashboard</span>
-                </NavLink>
+            <nav class="flex-1 px-4 py-6 space-y-1 overflow-y-auto">
+                @* Dashboard - visible to all authenticated users *@
+                <AuthorizeView>
+                    <Authorized>
+                        <NavLink href="" Match="NavLinkMatch.All"
+                                 class="flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-blue-100 hover:bg-white/10"
+                                 activeClass="bg-[#2563EB] text-white shadow-lg shadow-blue-900/30">
+                            <span>📊</span>
+                            <span>Dashboard</span>
+                        </NavLink>
+                    </Authorized>
+                </AuthorizeView>
 
-                <NavLink href="loan-applications"
-                         class="flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-blue-100 hover:bg-white/10"
-                         activeClass="bg-[#2563EB] text-white shadow-lg shadow-blue-900/30">
-                    <span>📝</span>
-                    <span>Loan Applications</span>
-                </NavLink>
+                @* Loan Applications - Admin, CrmManager, Lender, Borrower *@
+                <AuthorizeView Roles="Admin,CrmManager,Lender,Borrower">
+                    <Authorized>
+                        <NavLink href="loan-applications"
+                                 class="flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-blue-100 hover:bg-white/10"
+                                 activeClass="bg-[#2563EB] text-white shadow-lg shadow-blue-900/30">
+                            <span>📝</span>
+                            <span>Loan Applications</span>
+                        </NavLink>
+                    </Authorized>
+                </AuthorizeView>
 
-                <NavLink href="loan-products"
-                         class="flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-blue-100 hover:bg-white/10"
-                         activeClass="bg-[#2563EB] text-white shadow-lg shadow-blue-900/30">
-                    <span>🏦</span>
-                    <span>Loan Products</span>
-                </NavLink>
+                @* Loan Products - Admin, CrmManager, Lender *@
+                <AuthorizeView Roles="Admin,CrmManager,Lender">
+                    <Authorized>
+                        <NavLink href="loan-products"
+                                 class="flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-blue-100 hover:bg-white/10"
+                                 activeClass="bg-[#2563EB] text-white shadow-lg shadow-blue-900/30">
+                            <span>🏦</span>
+                            <span>Loan Products</span>
+                        </NavLink>
+                    </Authorized>
+                </AuthorizeView>
 
-                <NavLink href="borrowers"
-                         class="flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-blue-100 hover:bg-white/10"
-                         activeClass="bg-[#2563EB] text-white shadow-lg shadow-blue-900/30">
-                    <span>👤</span>
-                    <span>Borrowers</span>
-                </NavLink>
+                @* Borrowers - Admin, CrmManager *@
+                <AuthorizeView Roles="Admin,CrmManager">
+                    <Authorized>
+                        <NavLink href="borrowers"
+                                 class="flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-blue-100 hover:bg-white/10"
+                                 activeClass="bg-[#2563EB] text-white shadow-lg shadow-blue-900/30">
+                            <span>👤</span>
+                            <span>Borrowers</span>
+                        </NavLink>
+                    </Authorized>
+                </AuthorizeView>
 
-                <NavLink href="lenders"
-                         class="flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-blue-100 hover:bg-white/10"
-                         activeClass="bg-[#2563EB] text-white shadow-lg shadow-blue-900/30">
-                    <span>💼</span>
-                    <span>Lenders</span>
-                </NavLink>
+                @* Lenders - Admin *@
+                <AuthorizeView Roles="Admin">
+                    <Authorized>
+                        <NavLink href="lenders"
+                                 class="flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-blue-100 hover:bg-white/10"
+                                 activeClass="bg-[#2563EB] text-white shadow-lg shadow-blue-900/30">
+                            <span>💼</span>
+                            <span>Lenders</span>
+                        </NavLink>
+                    </Authorized>
+                </AuthorizeView>
 
-                <NavLink href="payments"
-                         class="flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-blue-100 hover:bg-white/10"
-                         activeClass="bg-[#2563EB] text-white shadow-lg shadow-blue-900/30">
-                    <span>💳</span>
-                    <span>Payments</span>
-                </NavLink>
+                @* Vetting Queue - CrmManager *@
+                <AuthorizeView Roles="CrmManager">
+                    <Authorized>
+                        <NavLink href="vetting"
+                                 class="flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-blue-100 hover:bg-white/10"
+                                 activeClass="bg-[#2563EB] text-white shadow-lg shadow-blue-900/30">
+                            <span>✅</span>
+                            <span>Vetting Queue</span>
+                        </NavLink>
+                    </Authorized>
+                </AuthorizeView>
 
-                <NavLink href="notifications"
-                         class="flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-blue-100 hover:bg-white/10"
-                         activeClass="bg-[#2563EB] text-white shadow-lg shadow-blue-900/30">
-                    <span>🔔</span>
-                    <span>Notifications</span>
-                </NavLink>
+                @* Payments - Borrower *@
+                <AuthorizeView Roles="Admin,Borrower">
+                    <Authorized>
+                        <NavLink href="payments"
+                                 class="flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-blue-100 hover:bg-white/10"
+                                 activeClass="bg-[#2563EB] text-white shadow-lg shadow-blue-900/30">
+                            <span>💳</span>
+                            <span>Payments</span>
+                        </NavLink>
+                    </Authorized>
+                </AuthorizeView>
 
-                <NavLink href="admin"
-                         class="flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-blue-100 hover:bg-white/10"
-                         activeClass="bg-[#2563EB] text-white shadow-lg shadow-blue-900/30">
-                    <span>⚙️</span>
-                    <span>Admin</span>
-                </NavLink>
+                @* Disputes - CustomerService, Admin *@
+                <AuthorizeView Roles="Admin,CustomerService">
+                    <Authorized>
+                        <NavLink href="disputes"
+                                 class="flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-blue-100 hover:bg-white/10"
+                                 activeClass="bg-[#2563EB] text-white shadow-lg shadow-blue-900/30">
+                            <span>⚖️</span>
+                            <span>Disputes</span>
+                        </NavLink>
+                    </Authorized>
+                </AuthorizeView>
+
+                @* Messages - CustomerService, Admin *@
+                <AuthorizeView Roles="Admin,CustomerService">
+                    <Authorized>
+                        <NavLink href="messages"
+                                 class="flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-blue-100 hover:bg-white/10"
+                                 activeClass="bg-[#2563EB] text-white shadow-lg shadow-blue-900/30">
+                            <span>💬</span>
+                            <span>Messages</span>
+                        </NavLink>
+                    </Authorized>
+                </AuthorizeView>
+
+                @* Notifications - all authenticated *@
+                <AuthorizeView>
+                    <Authorized>
+                        <NavLink href="notifications"
+                                 class="flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-blue-100 hover:bg-white/10"
+                                 activeClass="bg-[#2563EB] text-white shadow-lg shadow-blue-900/30">
+                            <span>🔔</span>
+                            <span>Notifications</span>
+                        </NavLink>
+                    </Authorized>
+                </AuthorizeView>
+
+                @* Audit Logs - Admin, Auditor *@
+                <AuthorizeView Roles="Admin,Auditor">
+                    <Authorized>
+                        <NavLink href="audit-logs"
+                                 class="flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-blue-100 hover:bg-white/10"
+                                 activeClass="bg-[#2563EB] text-white shadow-lg shadow-blue-900/30">
+                            <span>📋</span>
+                            <span>Audit Logs</span>
+                        </NavLink>
+                    </Authorized>
+                </AuthorizeView>
+
+                @* Admin section divider *@
+                <AuthorizeView Roles="Admin">
+                    <Authorized>
+                        <div class="pt-4 pb-2 px-4">
+                            <p class="text-xs font-semibold uppercase tracking-wider text-blue-300/60">Administration</p>
+                        </div>
+
+                        <NavLink href="admin/users"
+                                 class="flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-blue-100 hover:bg-white/10"
+                                 activeClass="bg-[#2563EB] text-white shadow-lg shadow-blue-900/30">
+                            <span>👥</span>
+                            <span>User Management</span>
+                        </NavLink>
+
+                        <NavLink href="admin/roles"
+                                 class="flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-blue-100 hover:bg-white/10"
+                                 activeClass="bg-[#2563EB] text-white shadow-lg shadow-blue-900/30">
+                            <span>🛡️</span>
+                            <span>Roles</span>
+                        </NavLink>
+                    </Authorized>
+                </AuthorizeView>
+
+                @* Sessions - all authenticated *@
+                <AuthorizeView>
+                    <Authorized>
+                        <NavLink href="account/sessions"
+                                 class="flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-blue-100 hover:bg-white/10"
+                                 activeClass="bg-[#2563EB] text-white shadow-lg shadow-blue-900/30">
+                            <span>🖥️</span>
+                            <span>Sessions</span>
+                        </NavLink>
+                    </Authorized>
+                </AuthorizeView>
             </nav>
 
             <div class="p-4 border-t border-white/10">
@@ -98,18 +211,34 @@
                         🔔
                     </button>
 
-                    <div class="flex items-center gap-3">
-                        <div class="avatar placeholder">
-                            <div class="bg-primary text-primary-content rounded-full w-10">
-                                <span>AF</span>
-                            </div>
-                        </div>
+                    <AuthorizeView>
+                        <Authorized>
+                            <div class="flex items-center gap-3">
+                                <div class="avatar placeholder">
+                                    <div class="bg-primary text-primary-content rounded-full w-10">
+                                        <span>@GetUserInitials(context)</span>
+                                    </div>
+                                </div>
 
-                        <div class="hidden sm:block">
-                            <div class="text-sm font-semibold text-slate-800">Afzal</div>
-                            <div class="text-xs text-slate-500">Senior .NET Developer</div>
-                        </div>
-                    </div>
+                                <div class="hidden sm:block">
+                                    <div class="text-sm font-semibold text-slate-800">@GetUserDisplayName(context)</div>
+                                    <div class="text-xs text-slate-500">@GetUserRole(context)</div>
+                                </div>
+
+                                <button @onclick="HandleLogoutAsync"
+                                        class="ml-2 rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50"
+                                        title="Sign out">
+                                    Logout
+                                </button>
+                            </div>
+                        </Authorized>
+                        <NotAuthorized>
+                            <a href="/login"
+                               class="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700">
+                                Sign In
+                            </a>
+                        </NotAuthorized>
+                    </AuthorizeView>
                 </div>
             </header>
 
@@ -123,3 +252,46 @@
     </div>
 </div>
 
+@code {
+    private string GetUserInitials(AuthenticationState context)
+    {
+        var givenName = context.User.FindFirst(System.Security.Claims.ClaimTypes.GivenName)?.Value ?? "";
+        var surname = context.User.FindFirst(System.Security.Claims.ClaimTypes.Surname)?.Value ?? "";
+
+        if (!string.IsNullOrEmpty(givenName) && !string.IsNullOrEmpty(surname))
+        {
+            return $"{givenName[0]}{surname[0]}".ToUpper();
+        }
+
+        var email = context.User.FindFirst(System.Security.Claims.ClaimTypes.Email)?.Value ?? "";
+        return email.Length >= 2 ? email[..2].ToUpper() : "U";
+    }
+
+    private string GetUserDisplayName(AuthenticationState context)
+    {
+        var givenName = context.User.FindFirst(System.Security.Claims.ClaimTypes.GivenName)?.Value ?? "";
+        var surname = context.User.FindFirst(System.Security.Claims.ClaimTypes.Surname)?.Value ?? "";
+
+        if (!string.IsNullOrEmpty(givenName))
+        {
+            return string.IsNullOrEmpty(surname) ? givenName : $"{givenName} {surname}";
+        }
+
+        return context.User.FindFirst(System.Security.Claims.ClaimTypes.Email)?.Value ?? "User";
+    }
+
+    private string GetUserRole(AuthenticationState context)
+    {
+        var roles = context.User.FindAll(System.Security.Claims.ClaimTypes.Role)
+            .Select(c => c.Value)
+            .ToList();
+
+        return roles.Count > 0 ? string.Join(", ", roles) : "Authenticated";
+    }
+
+    private async Task HandleLogoutAsync()
+    {
+        await AuthApiClient.LogoutAsync();
+        NavigationManager.NavigateTo("/login", forceLoad: false);
+    }
+}

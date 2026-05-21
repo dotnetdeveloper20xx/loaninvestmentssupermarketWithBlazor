@@ -1,0 +1,353 @@
+
+<div class="@WrapperClass">
+    <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+        <div class="flex items-center justify-between mb-6">
+            <div>
+                <h3 class="text-lg font-semibold text-slate-900">@Title</h3>
+                <p class="text-sm text-slate-500 mt-1">@Subtitle</p>
+            </div>
+            
+            @if (ShowExportButton)
+            {
+                <button type="button" 
+                        class="inline-flex items-center px-3 py-2 border border-slate-300 shadow-sm text-sm leading-4 font-medium rounded-lg text-slate-700 bg-white hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                        @onclick="ExportCalculation">
+                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                    </svg>
+                    Export
+                </button>
+            }
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <!-- Input Section -->
+            <div class="space-y-4">
+                <AppCurrencyInput Value="Principal"
+                                  ValueChanged="HandlePrincipalChange"
+                                  Label="Loan Amount"
+                                  Currency="@Currency"
+                                  MinValue="@(1000m)"
+                                  MaxValue="@(10000000m)"
+                                  Required="true" />
+
+                <AppPercentageInput Value="InterestRate"
+                                    ValueChanged="HandleRateChange"
+                                    Label="Interest Rate"
+                                    DecimalPlaces="3"
+                                    MinValue="@(0.1m)"
+                                    MaxValue="@(25m)"
+                                    ShowMarketComparison="true"
+                                    MarketAverageRate="@(4.5m)" />
+
+                <AppLoanTermInput Value="TermInMonths"
+                                  ValueChanged="HandleTermChange"
+                                  Label="Loan Term"
+                                  MinMonths="6"
+                                  MaxMonths="360"
+                                  AllowedUnits="@(new[] { "months", "years" })"
+                                  ShowConversion="true" />
+
+                @if (ShowPaymentFrequency)
+                {
+                    <div>
+                        <label class="mb-2 block text-sm font-semibold text-slate-700">Payment Frequency</label>
+                        <select class="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 shadow-sm outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
+                                @onchange="HandleFrequencyChange">
+                            <option value="12" selected="@(PaymentsPerYear == 12)">Monthly</option>
+                            <option value="26" selected="@(PaymentsPerYear == 26)">Bi-weekly</option>
+                            <option value="52" selected="@(PaymentsPerYear == 52)">Weekly</option>
+                        </select>
+                    </div>
+                }
+            </div>
+
+            <!-- Results Section -->
+            <div class="space-y-4">
+                <div class="bg-blue-50 rounded-xl p-4">
+                    <h4 class="text-sm font-semibold text-blue-900 mb-3">Payment Summary</h4>
+                    <div class="space-y-2">
+                        <div class="flex justify-between">
+                            <span class="text-sm text-blue-700">@GetPaymentFrequencyText() Payment:</span>
+                            <span class="text-sm font-semibold text-blue-900">@FormatCurrency(CalculationResult?.PaymentAmount ?? 0)</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-sm text-blue-700">Total Interest:</span>
+                            <span class="text-sm font-semibold text-blue-900">@FormatCurrency(CalculationResult?.TotalInterest ?? 0)</span>
+                        </div>
+                        <div class="flex justify-between border-t border-blue-200 pt-2">
+                            <span class="text-sm font-semibold text-blue-900">Total Cost:</span>
+                            <span class="text-sm font-bold text-blue-900">@FormatCurrency(CalculationResult?.TotalCost ?? 0)</span>
+                        </div>
+                    </div>
+                </div>
+
+                @if (ShowAffordabilityCheck && CalculationResult != null)
+                {
+                    <div class="bg-slate-50 rounded-xl p-4">
+                        <h4 class="text-sm font-semibold text-slate-900 mb-3">Affordability Check</h4>
+                        <div class="space-y-2">
+                            <div class="flex justify-between">
+                                <span class="text-sm text-slate-600">Payment to Income:</span>
+                                <span class="text-sm font-semibold @GetAffordabilityClass()">@GetAffordabilityPercentage()%</span>
+                            </div>
+                            <div class="w-full bg-slate-200 rounded-full h-2">
+                                <div class="@GetAffordabilityBarClass() h-2 rounded-full transition-all duration-300" 
+                                     style="width: @Math.Min(GetAffordabilityPercentage(), 100)%"></div>
+                            </div>
+                            <p class="text-xs text-slate-500">@GetAffordabilityMessage()</p>
+                        </div>
+                    </div>
+                }
+            </div>
+
+            <!-- Amortization Preview -->
+            @if (ShowAmortization && CalculationResult?.AmortizationSchedule?.Any() == true)
+            {
+                <div class="space-y-4">
+                    <h4 class="text-sm font-semibold text-slate-900">Payment Breakdown (First 12 months)</h4>
+                    <div class="max-h-64 overflow-y-auto">
+                        <table class="w-full text-xs">
+                            <thead class="bg-slate-50 sticky top-0">
+                                <tr>
+                                    <th class="px-2 py-2 text-left">#</th>
+                                    <th class="px-2 py-2 text-left">Principal</th>
+                                    <th class="px-2 py-2 text-left">Interest</th>
+                                    <th class="px-2 py-2 text-left">Balance</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-100">
+                                @foreach (var payment in CalculationResult.AmortizationSchedule.Take(12))
+                                {
+                                    <tr>
+                                        <td class="px-2 py-1 text-slate-600">@payment.PaymentNumber</td>
+                                        <td class="px-2 py-1 text-slate-900">@FormatCurrency(payment.PrincipalAmount)</td>
+                                        <td class="px-2 py-1 text-slate-600">@FormatCurrency(payment.InterestAmount)</td>
+                                        <td class="px-2 py-1 text-slate-900">@FormatCurrency(payment.RemainingBalance)</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter] public string Title { get; set; } = "Loan Calculator";
+    [Parameter] public string Subtitle { get; set; } = "Calculate your monthly payments and total costs";
+    [Parameter] public string WrapperClass { get; set; } = string.Empty;
+    [Parameter] public string Currency { get; set; } = "GBP";
+    [Parameter] public bool ShowAmortization { get; set; } = true;
+    [Parameter] public bool ShowPaymentFrequency { get; set; } = true;
+    [Parameter] public bool ShowAffordabilityCheck { get; set; }
+    [Parameter] public bool ShowExportButton { get; set; } = true;
+    [Parameter] public decimal MonthlyIncome { get; set; }
+    [Parameter] public EventCallback<LoanCalculationResult> OnCalculationChanged { get; set; }
+
+    [Parameter] public decimal Principal { get; set; } = 250000;
+    [Parameter] public EventCallback<decimal> PrincipalChanged { get; set; }
+
+    [Parameter] public decimal InterestRate { get; set; } = 4.5m;
+    [Parameter] public EventCallback<decimal> InterestRateChanged { get; set; }
+
+    [Parameter] public int TermInMonths { get; set; } = 300; // 25 years
+    [Parameter] public EventCallback<int> TermInMonthsChanged { get; set; }
+
+    [Parameter] public int PaymentsPerYear { get; set; } = 12;
+    [Parameter] public EventCallback<int> PaymentsPerYearChanged { get; set; }
+
+    public LoanCalculationResult? CalculationResult { get; private set; }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        await CalculateLoan();
+    }
+
+    private async Task HandlePrincipalChange(decimal value)
+    {
+        Principal = value;
+        await PrincipalChanged.InvokeAsync(value);
+        await CalculateLoan();
+    }
+
+    private async Task HandleRateChange(decimal value)
+    {
+        InterestRate = value;
+        await InterestRateChanged.InvokeAsync(value);
+        await CalculateLoan();
+    }
+
+    private async Task HandleTermChange(int value)
+    {
+        TermInMonths = value;
+        await TermInMonthsChanged.InvokeAsync(value);
+        await CalculateLoan();
+    }
+
+    private async Task HandleFrequencyChange(ChangeEventArgs e)
+    {
+        if (int.TryParse(e.Value?.ToString(), out var frequency))
+        {
+            PaymentsPerYear = frequency;
+            await PaymentsPerYearChanged.InvokeAsync(frequency);
+            await CalculateLoan();
+        }
+    }
+
+    private async Task CalculateLoan()
+    {
+        if (Principal > 0 && InterestRate > 0 && TermInMonths > 0)
+        {
+            CalculationResult = LoanCalculationService.Calculate(Principal, InterestRate, TermInMonths, PaymentsPerYear);
+            await OnCalculationChanged.InvokeAsync(CalculationResult);
+        }
+        else
+        {
+            CalculationResult = null;
+        }
+    }
+
+    private string FormatCurrency(decimal value)
+    {
+        var symbol = Currency switch
+        {
+            "GBP" => "£",
+            "USD" => "$",
+            "EUR" => "€",
+            _ => Currency
+        };
+        return $"{symbol}{value:N2}";
+    }
+
+    private string GetPaymentFrequencyText()
+    {
+        return PaymentsPerYear switch
+        {
+            52 => "Weekly",
+            26 => "Bi-weekly",
+            12 => "Monthly",
+            4 => "Quarterly",
+            1 => "Annual",
+            _ => "Payment"
+        };
+    }
+
+    private decimal GetAffordabilityPercentage()
+    {
+        if (MonthlyIncome <= 0 || CalculationResult == null) return 0;
+        var monthlyPayment = CalculationResult.PaymentAmount * (PaymentsPerYear / 12m);
+        return Math.Round((monthlyPayment / MonthlyIncome) * 100, 1);
+    }
+
+    private string GetAffordabilityClass()
+    {
+        var percentage = GetAffordabilityPercentage();
+        return percentage switch
+        {
+            <= 28 => "text-green-600",
+            <= 36 => "text-yellow-600",
+            <= 43 => "text-orange-600",
+            _ => "text-red-600"
+        };
+    }
+
+    private string GetAffordabilityBarClass()
+    {
+        var percentage = GetAffordabilityPercentage();
+        return percentage switch
+        {
+            <= 28 => "bg-green-500",
+            <= 36 => "bg-yellow-500",
+            <= 43 => "bg-orange-500",
+            _ => "bg-red-500"
+        };
+    }
+
+    private string GetAffordabilityMessage()
+    {
+        var percentage = GetAffordabilityPercentage();
+        return percentage switch
+        {
+            <= 28 => "Excellent - Well within recommended limits",
+            <= 36 => "Good - Within acceptable range",
+            <= 43 => "Caution - Approaching maximum recommended ratio",
+            _ => "High Risk - Exceeds recommended debt-to-income ratio"
+        };
+    }
+
+    private async Task ExportCalculation()
+    {
+        // Implementation for exporting calculation results
+        await Task.CompletedTask;
+    }
+
+    public class LoanCalculationResult
+    {
+        public decimal PaymentAmount { get; set; }
+        public decimal TotalInterest { get; set; }
+        public decimal TotalCost { get; set; }
+        public List<AmortizationPayment> AmortizationSchedule { get; set; } = new();
+    }
+
+    public class AmortizationPayment
+    {
+        public int PaymentNumber { get; set; }
+        public decimal PaymentAmount { get; set; }
+        public decimal PrincipalAmount { get; set; }
+        public decimal InterestAmount { get; set; }
+        public decimal RemainingBalance { get; set; }
+    }
+
+    public static class LoanCalculationService
+    {
+        public static LoanCalculationResult Calculate(decimal principal, decimal annualRate, int termInMonths, int paymentsPerYear = 12)
+        {
+            var periodicRate = (double)(annualRate / 100) / paymentsPerYear;
+            var totalPayments = (int)(termInMonths * paymentsPerYear / 12);
+            
+            // Calculate payment amount using standard loan formula
+            var powFactor = Math.Pow(1 + periodicRate, totalPayments);
+            var paymentAmount = (double)principal * (periodicRate * powFactor) / (powFactor - 1);
+            
+            var totalCost = paymentAmount * totalPayments;
+            var totalInterest = totalCost - (double)principal;
+            
+            var amortizationSchedule = GenerateAmortizationSchedule(principal, periodicRate, totalPayments, (decimal)paymentAmount);
+            
+            return new LoanCalculationResult
+            {
+                PaymentAmount = Math.Round((decimal)paymentAmount, 2),
+                TotalInterest = Math.Round((decimal)totalInterest, 2),
+                TotalCost = Math.Round((decimal)totalCost, 2),
+                AmortizationSchedule = amortizationSchedule
+            };
+        }
+        
+        private static List<AmortizationPayment> GenerateAmortizationSchedule(decimal principal, double periodicRate, int totalPayments, decimal paymentAmount)
+        {
+            var schedule = new List<AmortizationPayment>();
+            var remainingBalance = principal;
+            
+            for (int i = 1; i <= totalPayments && remainingBalance > 0; i++)
+            {
+                var interestAmount = remainingBalance * (decimal)periodicRate;
+                var principalAmount = Math.Min(paymentAmount - interestAmount, remainingBalance);
+                remainingBalance -= principalAmount;
+                
+                schedule.Add(new AmortizationPayment
+                {
+                    PaymentNumber = i,
+                    PaymentAmount = paymentAmount,
+                    PrincipalAmount = Math.Round(principalAmount, 2),
+                    InterestAmount = Math.Round(interestAmount, 2),
+                    RemainingBalance = Math.Round(Math.Max(remainingBalance, 0), 2)
+                });
+            }
+            
+            return schedule;
+        }
+    }
+}

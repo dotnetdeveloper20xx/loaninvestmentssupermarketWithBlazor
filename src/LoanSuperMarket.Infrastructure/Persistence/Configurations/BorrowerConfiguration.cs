@@ -46,10 +46,14 @@ public sealed class BorrowerConfiguration : IEntityTypeConfiguration<Borrower>
         builder.Property(x => x.UpdatedBy)
             .HasMaxLength(150);
 
+        builder.Property(x => x.UserId)
+            .HasMaxLength(450);
+
         builder.HasIndex(x => x.Email)
             .IsUnique();
 
         builder.HasIndex(x => x.Status);
         builder.HasIndex(x => x.CreatedAtUtc);
+        builder.HasIndex(x => x.UserId);
     }
 }

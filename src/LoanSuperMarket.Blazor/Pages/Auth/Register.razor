@@ -1,0 +1,157 @@
+@page "/register"
+@using LoanSuperMarket.Shared.Auth
+@using LoanSuperMarket.Shared.Common
+@inject AuthApiClient AuthApiClient
+@inject NavigationManager NavigationManager
+
+<PageHeader Title="Create Account"
+            Subtitle="Register as a Borrower or Lender to get started." />
+
+<div class="mx-auto max-w-md">
+    <div class="rounded-2xl border border-slate-200 bg-white p-8 shadow-sm">
+        @if (_registrationComplete)
+        {
+            <div class="text-center">
+                <div class="mb-4 text-4xl">✉️</div>
+                <h3 class="mb-2 text-lg font-semibold text-slate-900">Check Your Email</h3>
+                <p class="mb-6 text-sm text-slate-600">
+                    We've sent a confirmation link to <strong>@_registerRequest.Email</strong>.
+                    Please verify your email address to activate your account.
+                </p>
+                <a href="/login" class="text-sm font-medium text-blue-600 hover:text-blue-700">
+                    Back to Sign In
+                </a>
+            </div>
+        }
+        else
+        {
+            <EditForm Model="_registerRequest" OnValidSubmit="HandleRegisterAsync" FormName="RegisterForm">
+                <DataAnnotationsValidator />
+
+                <div class="space-y-5">
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label for="firstName" class="mb-1 block text-sm font-medium text-slate-700">First Name</label>
+                            <InputText id="firstName" @bind-Value="_registerRequest.FirstName"
+                                       class="w-full rounded-lg border border-slate-300 px-4 py-2.5 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                                       placeholder="John" />
+                            <ValidationMessage For="@(() => _registerRequest.FirstName)" class="mt-1 text-xs text-red-600" />
+                        </div>
+
+                        <div>
+                            <label for="lastName" class="mb-1 block text-sm font-medium text-slate-700">Last Name</label>
+                            <InputText id="lastName" @bind-Value="_registerRequest.LastName"
+                                       class="w-full rounded-lg border border-slate-300 px-4 py-2.5 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                                       placeholder="Doe" />
+                            <ValidationMessage For="@(() => _registerRequest.LastName)" class="mt-1 text-xs text-red-600" />
+                        </div>
+                    </div>
+
+                    <div>
+                        <label for="email" class="mb-1 block text-sm font-medium text-slate-700">Email</label>
+                        <InputText id="email" @bind-Value="_registerRequest.Email"
+                                   class="w-full rounded-lg border border-slate-300 px-4 py-2.5 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                                   placeholder="you@example.com" />
+                        <ValidationMessage For="@(() => _registerRequest.Email)" class="mt-1 text-xs text-red-600" />
+                    </div>
+
+                    <div>
+                        <label for="password" class="mb-1 block text-sm font-medium text-slate-700">Password</label>
+                        <InputText id="password" @bind-Value="_registerRequest.Password" type="password"
+                                   class="w-full rounded-lg border border-slate-300 px-4 py-2.5 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                                   placeholder="••••••••" />
+                        <ValidationMessage For="@(() => _registerRequest.Password)" class="mt-1 text-xs text-red-600" />
+                        <p class="mt-1 text-xs text-slate-500">Minimum 8 characters with uppercase, lowercase, digit, and special character.</p>
+                    </div>
+
+                    <div>
+                        <label for="userType" class="mb-1 block text-sm font-medium text-slate-700">I want to register as</label>
+                        <InputSelect id="userType" @bind-Value="_registerRequest.UserType"
+                                     class="w-full rounded-lg border border-slate-300 px-4 py-2.5 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500">
+                            <option value="">Select user type...</option>
+                            <option value="Borrower">Borrower</option>
+                            <option value="Lender">Lender</option>
+                        </InputSelect>
+                        <ValidationMessage For="@(() => _registerRequest.UserType)" class="mt-1 text-xs text-red-600" />
+                    </div>
+
+                    @if (_registerRequest.UserType == "Lender")
+                    {
+                        <div>
+                            <label for="companyName" class="mb-1 block text-sm font-medium text-slate-700">Company Name</label>
+                            <InputText id="companyName" @bind-Value="_registerRequest.CompanyName"
+                                       class="w-full rounded-lg border border-slate-300 px-4 py-2.5 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                                       placeholder="Your Company Ltd" />
+                        </div>
+                    }
+
+                    @if (!string.IsNullOrWhiteSpace(_errorMessage))
+                    {
+                        <div class="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                            @_errorMessage
+                        </div>
+                    }
+
+                    <button type="submit" disabled="@_isSubmitting"
+                            class="w-full rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-50">
+                        @if (_isSubmitting)
+                        {
+                            <span>Creating account...</span>
+                        }
+                        else
+                        {
+                            <span>Create Account</span>
+                        }
+                    </button>
+
+                    <div class="text-center text-sm">
+                        <span class="text-slate-600">Already have an account?</span>
+                        <a href="/login" class="ml-1 font-medium text-blue-600 hover:text-blue-700">Sign In</a>
+                    </div>
+                </div>
+            </EditForm>
+        }
+    </div>
+</div>
+
+@code {
+    private readonly RegisterRequest _registerRequest = new();
+    private bool _isSubmitting;
+    private bool _registrationComplete;
+    private string? _errorMessage;
+
+    private async Task HandleRegisterAsync()
+    {
+        _isSubmitting = true;
+        _errorMessage = null;
+
+        try
+        {
+            var response = await AuthApiClient.RegisterAsync(_registerRequest);
+
+            if (response is null)
+            {
+                _errorMessage = "No response received from the server.";
+                return;
+            }
+
+            if (response.Success)
+            {
+                _registrationComplete = true;
+                return;
+            }
+
+            _errorMessage = response.Errors.Count > 0
+                ? string.Join(", ", response.Errors)
+                : response.Message ?? "Registration failed. Please try again.";
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = $"An error occurred. {ex.Message}";
+        }
+        finally
+        {
+            _isSubmitting = false;
+        }
+    }
+}

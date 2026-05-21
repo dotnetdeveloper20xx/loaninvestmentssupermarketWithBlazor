@@ -1,0 +1,7 @@
+<div class="flex items-center space-x-2">
+    @ChildContent
+</div>
+
+@code {
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+}

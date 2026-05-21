@@ -3,12 +3,14 @@ using LoanSuperMarket.Application.Features.Borrowers.GetBorrowers;
 using LoanSuperMarket.Shared.Borrowers;
 using LoanSuperMarket.Shared.Common;
 using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace LoanSuperMarket.Api.Controllers;
 
 [ApiController]
 [Route("api/borrowers")]
+[Authorize(Policy = "CanManageBorrowers")]
 public sealed class BorrowersController : ControllerBase
 {
     private readonly ISender _sender;

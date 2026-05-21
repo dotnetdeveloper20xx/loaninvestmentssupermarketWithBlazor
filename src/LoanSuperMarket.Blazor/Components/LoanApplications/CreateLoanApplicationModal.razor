@@ -47,17 +47,22 @@
                                   ValueChanged="value => _loanProductIdText = value" />
 
                     <FormSection>
-                        <AppNumberInput TValue="decimal"
-                                        Label="Requested amount"
-                                        Value="@_model.RequestedAmount"
-                                        ValueChanged="value => _model.RequestedAmount = value"
-                                        ValueExpression="@(() => _model.RequestedAmount)" />
+                        <AppCurrencyInput Value="_model.RequestedAmount"
+                                          ValueChanged="value => _model.RequestedAmount = value"
+                                          ValueExpression="@(() => _model.RequestedAmount)"
+                                          Label="Requested amount"
+                                          Currency="GBP"
+                                          MinValue="@(500m)"
+                                          MaxValue="@(5000000m)"
+                                          Required="true" />
 
-                        <AppNumberInput TValue="int"
-                                        Label="Term months"
-                                        Value="@_model.TermMonths"
-                                        ValueChanged="value => _model.TermMonths = value"
-                                        ValueExpression="@(() => _model.TermMonths)" />
+                        <AppLoanTermInput Value="_model.TermMonths"
+                                          ValueChanged="value => _model.TermMonths = value"
+                                          ValueExpression="@(() => _model.TermMonths)"
+                                          Label="Loan term"
+                                          MinMonths="3"
+                                          MaxMonths="360"
+                                          ShowConversion="true" />
                     </FormSection>
 
                     <AppTextArea Label="Purpose"

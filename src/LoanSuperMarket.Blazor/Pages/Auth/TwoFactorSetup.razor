@@ -1,0 +1,205 @@
+@page "/2fa-setup"
+@using LoanSuperMarket.Shared.Common
+@using Microsoft.AspNetCore.Authorization
+@attribute [Authorize]
+@inject HttpClient HttpClient
+@inject NavigationManager NavigationManager
+
+<PageHeader Title="Two-Factor Authentication Setup"
+            Subtitle="Secure your account with an authenticator app." />
+
+<div class="mx-auto max-w-md">
+    <div class="rounded-2xl border border-slate-200 bg-white p-8 shadow-sm">
+        @if (_isLoading)
+        {
+            <div class="text-center">
+                <p class="text-sm text-slate-600">Loading setup...</p>
+            </div>
+        }
+        else if (_setupComplete)
+        {
+            <div class="text-center">
+                <div class="mb-4 text-4xl">🔐</div>
+                <h3 class="mb-2 text-lg font-semibold text-slate-900">
+                    2FA Enabled Successfully
+                </h3>
+                <p class="mb-4 text-sm text-slate-600">
+                    Save these recovery codes in a safe place.
+                </p>
+
+                @if (_recoveryCodes is not null && _recoveryCodes.Count > 0)
+                {
+                    <div class="mb-6 rounded-lg border border-amber-200 bg-amber-50 p-4">
+                        <p class="mb-2 text-xs font-semibold uppercase text-amber-800">
+                            Recovery Codes
+                        </p>
+                        <div class="grid grid-cols-2 gap-1">
+                            @foreach (var code in _recoveryCodes)
+                            {
+                                <code class="text-sm text-amber-900">@code</code>
+                            }
+                        </div>
+                    </div>
+                }
+
+                <a href="/"
+                   class="inline-block rounded-lg bg-blue-600 px-6 py-2.5 text-sm font-semibold text-white hover:bg-blue-700">
+                    Done
+                </a>
+            </div>
+        }
+        else
+        {
+            <div class="space-y-6">
+                <div class="text-center">
+                    <p class="mb-4 text-sm text-slate-600">
+                        Scan the QR code below with your authenticator app
+                        (Google Authenticator, Authy, etc.)
+                    </p>
+
+                    @if (!string.IsNullOrWhiteSpace(_qrCodeUri))
+                    {
+                        <div class="mx-auto mb-4 w-fit rounded-lg border border-slate-200 bg-white p-4">
+                            <img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=@(Uri.EscapeDataString(_qrCodeUri))"
+                                 alt="QR Code for authenticator app"
+                                 class="h-48 w-48" />
+                        </div>
+                        <details class="text-left">
+                            <summary class="cursor-pointer text-xs text-slate-500">
+                                Can't scan? Enter this key manually
+                            </summary>
+                            <code class="mt-2 block break-all rounded bg-slate-100 p-2 text-xs text-slate-700">
+                                @_manualEntryKey
+                            </code>
+                        </details>
+                    }
+                </div>
+
+                <div>
+                    <label for="verifyCode" class="mb-1 block text-sm font-medium text-slate-700">
+                        Verification Code
+                    </label>
+                    <input id="verifyCode" @bind="_verificationCode"
+                           class="w-full rounded-lg border border-slate-300 px-4 py-2.5 text-center text-sm tracking-widest focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                           placeholder="000000" maxlength="6" />
+                    <p class="mt-1 text-xs text-slate-500">
+                        Enter the 6-digit code from your authenticator app to verify setup.
+                    </p>
+                </div>
+
+                @if (!string.IsNullOrWhiteSpace(_errorMessage))
+                {
+                    <div class="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                        @_errorMessage
+                    </div>
+                }
+
+                <button @onclick="HandleVerifyAsync" disabled="@_isVerifying"
+                        class="w-full rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-50">
+                    @if (_isVerifying)
+                    {
+                        <span>Verifying...</span>
+                    }
+                    else
+                    {
+                        <span>Verify &amp; Enable 2FA</span>
+                    }
+                </button>
+            </div>
+        }
+    </div>
+</div>
+
+@code {
+    private bool _isLoading = true;
+    private bool _isVerifying;
+    private bool _setupComplete;
+    private string? _qrCodeUri;
+    private string? _manualEntryKey;
+    private string _verificationCode = string.Empty;
+    private string? _errorMessage;
+    private IReadOnlyList<string>? _recoveryCodes;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadSetupAsync();
+    }
+
+    private async Task LoadSetupAsync()
+    {
+        _isLoading = true;
+
+        try
+        {
+            var response = await HttpClient.PostAsync("api/auth/2fa/setup", null);
+            var result = await response.Content
+                .ReadFromJsonAsync<ApiResponse<TwoFactorSetupData>>();
+
+            if (result?.Success == true && result.Data is not null)
+            {
+                _qrCodeUri = result.Data.QrCodeUri;
+                _manualEntryKey = result.Data.ManualEntryKey;
+            }
+            else
+            {
+                _errorMessage = result?.Errors.Count > 0
+                    ? string.Join(", ", result.Errors)
+                    : "Failed to load 2FA setup.";
+            }
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = $"An error occurred. {ex.Message}";
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private async Task HandleVerifyAsync()
+    {
+        if (string.IsNullOrWhiteSpace(_verificationCode) || _verificationCode.Length != 6)
+        {
+            _errorMessage = "Please enter a valid 6-digit code.";
+            return;
+        }
+
+        _isVerifying = true;
+        _errorMessage = null;
+
+        try
+        {
+            var request = new { Code = _verificationCode };
+            var response = await HttpClient.PostAsJsonAsync("api/auth/2fa/verify", request);
+            var result = await response.Content
+                .ReadFromJsonAsync<ApiResponse<IReadOnlyList<string>>>();
+
+            if (result?.Success == true && result.Data is not null)
+            {
+                _recoveryCodes = result.Data;
+                _setupComplete = true;
+            }
+            else
+            {
+                _errorMessage = result?.Errors.Count > 0
+                    ? string.Join(", ", result.Errors)
+                    : "Verification failed. Please check the code and try again.";
+            }
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = $"An error occurred. {ex.Message}";
+        }
+        finally
+        {
+            _isVerifying = false;
+        }
+    }
+
+    private sealed class TwoFactorSetupData
+    {
+        public string QrCodeUri { get; init; } = string.Empty;
+        public string ManualEntryKey { get; init; } = string.Empty;
+    }
+}

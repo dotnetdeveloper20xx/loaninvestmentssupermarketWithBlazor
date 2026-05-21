@@ -64,41 +64,34 @@
                                            class="mt-2 text-sm text-red-600" />
                     </div>
 
-                    <div>
-                        <label class="mb-2 block text-sm font-semibold text-slate-700">
-                            Minimum amount
-                        </label>
+                    <AppCurrencyInput Value="_model.MinimumAmount"
+                                      ValueChanged="value => _model.MinimumAmount = value"
+                                      ValueExpression="@(() => _model.MinimumAmount)"
+                                      Label="Minimum amount"
+                                      Currency="GBP"
+                                      MinValue="@(100m)"
+                                      MaxValue="@(10000000m)"
+                                      ShowRangeInfo="false" />
 
-                        <InputNumber class="@InputClass"
-                                     @bind-Value="_model.MinimumAmount" />
+                    <AppCurrencyInput Value="_model.MaximumAmount"
+                                      ValueChanged="value => _model.MaximumAmount = value"
+                                      ValueExpression="@(() => _model.MaximumAmount)"
+                                      Label="Maximum amount"
+                                      Currency="GBP"
+                                      MinValue="@(1000m)"
+                                      MaxValue="@(10000000m)"
+                                      ShowRangeInfo="false" />
 
-                        <ValidationMessage For="@(() => _model.MinimumAmount)"
-                                           class="mt-2 text-sm text-red-600" />
-                    </div>
-
-                    <div>
-                        <label class="mb-2 block text-sm font-semibold text-slate-700">
-                            Maximum amount
-                        </label>
-
-                        <InputNumber class="@InputClass"
-                                     @bind-Value="_model.MaximumAmount" />
-
-                        <ValidationMessage For="@(() => _model.MaximumAmount)"
-                                           class="mt-2 text-sm text-red-600" />
-                    </div>
-
-                    <div>
-                        <label class="mb-2 block text-sm font-semibold text-slate-700">
-                            Interest rate %
-                        </label>
-
-                        <InputNumber class="@InputClass"
-                                     @bind-Value="_model.InterestRate" />
-
-                        <ValidationMessage For="@(() => _model.InterestRate)"
-                                           class="mt-2 text-sm text-red-600" />
-                    </div>
+                    <AppPercentageInput Value="_model.InterestRate"
+                                        ValueChanged="value => _model.InterestRate = value"
+                                        ValueExpression="@(() => _model.InterestRate)"
+                                        Label="Interest rate"
+                                        DecimalPlaces="2"
+                                        MinValue="@(0.1m)"
+                                        MaxValue="@(30m)"
+                                        Suffix="% APR"
+                                        ShowMarketComparison="true"
+                                        MarketAverageRate="@(5.5m)" />
 
                     <div>
                         <label class="mb-2 block text-sm font-semibold text-slate-700">
@@ -116,29 +109,23 @@
                         }
                     </div>
 
-                    <div>
-                        <label class="mb-2 block text-sm font-semibold text-slate-700">
-                            Minimum term months
-                        </label>
+                    <AppLoanTermInput Value="_model.MinimumTermMonths"
+                                      ValueChanged="value => _model.MinimumTermMonths = value"
+                                      ValueExpression="@(() => _model.MinimumTermMonths)"
+                                      Label="Minimum term"
+                                      MinMonths="1"
+                                      MaxMonths="360"
+                                      ShowConversion="true"
+                                      ShowRangeInfo="false" />
 
-                        <InputNumber class="@InputClass"
-                                     @bind-Value="_model.MinimumTermMonths" />
-
-                        <ValidationMessage For="@(() => _model.MinimumTermMonths)"
-                                           class="mt-2 text-sm text-red-600" />
-                    </div>
-
-                    <div>
-                        <label class="mb-2 block text-sm font-semibold text-slate-700">
-                            Maximum term months
-                        </label>
-
-                        <InputNumber class="@InputClass"
-                                     @bind-Value="_model.MaximumTermMonths" />
-
-                        <ValidationMessage For="@(() => _model.MaximumTermMonths)"
-                                           class="mt-2 text-sm text-red-600" />
-                    </div>
+                    <AppLoanTermInput Value="_model.MaximumTermMonths"
+                                      ValueChanged="value => _model.MaximumTermMonths = value"
+                                      ValueExpression="@(() => _model.MaximumTermMonths)"
+                                      Label="Maximum term"
+                                      MinMonths="1"
+                                      MaxMonths="360"
+                                      ShowConversion="true"
+                                      ShowRangeInfo="false" />
                 </div>
 
                 <div class="mt-8 flex justify-end gap-3 border-t border-slate-200 pt-5">

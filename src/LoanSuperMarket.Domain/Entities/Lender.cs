@@ -40,6 +40,8 @@ public sealed class Lender : AuditableEntity
 
     public LenderStatus Status { get; private set; }
 
+    public string? UserId { get; private set; }
+
     public static Lender Create(
         string companyName,
         string contactName,

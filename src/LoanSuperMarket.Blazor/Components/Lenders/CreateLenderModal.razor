@@ -60,11 +60,14 @@
                                   ValueChanged="value => _model.PhoneNumber = value"
                                   ValueExpression="@(() => _model.PhoneNumber)" />
 
-                    <AppNumberInput TValue="decimal"
-                                    Label="Available funds"
-                                    Value="@_model.AvailableFunds"
-                                    ValueChanged="value => _model.AvailableFunds = value"
-                                    ValueExpression="@(() => _model.AvailableFunds)" />
+                    <AppCurrencyInput Value="_model.AvailableFunds"
+                                      ValueChanged="value => _model.AvailableFunds = value"
+                                      ValueExpression="@(() => _model.AvailableFunds)"
+                                      Label="Available funds"
+                                      Currency="GBP"
+                                      MinValue="@(1000m)"
+                                      MaxValue="@(100000000m)"
+                                      Required="true" />
                 </FormSection>
 
                 <FormActions IsSaving="_isSaving"

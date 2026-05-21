@@ -19,6 +19,8 @@ public sealed class ApplicationDbContext : DbContext
 
     public DbSet<LoanApplication> LoanApplications => Set<LoanApplication>();
 
+    public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(ApplicationDbContext).Assembly);

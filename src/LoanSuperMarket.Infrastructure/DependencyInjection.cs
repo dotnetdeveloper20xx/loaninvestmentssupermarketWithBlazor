@@ -1,6 +1,9 @@
 using LoanSuperMarket.Application.Common.Interfaces;
+using LoanSuperMarket.Domain.Entities.Identity;
+using LoanSuperMarket.Infrastructure.Identity;
 using LoanSuperMarket.Infrastructure.Persistence;
 using LoanSuperMarket.Infrastructure.Repositories;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -20,6 +23,33 @@ public static class DependencyInjection
             options.UseSqlServer(connectionString);
         });
 
+        services.AddDbContext<AuthIdentityDbContext>(options =>
+        {
+            options.UseSqlServer(connectionString);
+        });
+
+        services.AddIdentity<ApplicationUser, CustomRole>(options =>
+        {
+            options.Password.RequiredLength = 8;
+            options.Password.RequireUppercase = true;
+            options.Password.RequireLowercase = true;
+            options.Password.RequireDigit = true;
+            options.Password.RequireNonAlphanumeric = true;
+
+            options.Lockout.MaxFailedAccessAttempts = 5;
+            options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(15);
+            options.Lockout.AllowedForNewUsers = true;
+
+            options.User.RequireUniqueEmail = true;
+        })
+        .AddEntityFrameworkStores<AuthIdentityDbContext>()
+        .AddDefaultTokenProviders();
+
+        services.AddHttpContextAccessor();
+        services.AddScoped<ICurrentUserService, CurrentUserService>();
+
+        services.AddScoped<IIdentityService, IdentityService>();
+
         services.AddScoped<ILoanProductRepository, LoanProductRepository>();
 
         services.AddScoped<IBorrowerRepository, BorrowerRepository>();
@@ -29,6 +59,15 @@ public static class DependencyInjection
         services.AddScoped<ILoanApplicationRepository, LoanApplicationRepository>();
 
         services.AddScoped<IDashboardRepository, DashboardRepository>();
+        services.AddScoped<IAuditLogRepository, AuditLogRepository>();
+
+        services.AddScoped<ITwoFactorService, TwoFactorService>();
+
+        services.AddScoped<ISessionService, SessionService>();
+
+        services.AddScoped<IPermissionResolver, PermissionResolver>();
+
+        services.AddScoped<IRoleManagementService, RoleManagementService>();
 
         return services;
     }

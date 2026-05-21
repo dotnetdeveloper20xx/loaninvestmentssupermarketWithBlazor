@@ -11,6 +11,11 @@ public interface IBorrowerRepository
 
     Task<Borrower?> GetByIdAsync(Guid id, CancellationToken cancellationToken);
 
+    /// <summary>
+    /// Retrieves a borrower by their linked ApplicationUser identifier.
+    /// </summary>
+    Task<Borrower?> GetByUserIdAsync(string userId, CancellationToken cancellationToken);
+
     Task<IReadOnlyList<Borrower>> GetAllAsync(CancellationToken cancellationToken);
 
     Task<bool> EmailExistsAsync(string email, CancellationToken cancellationToken);

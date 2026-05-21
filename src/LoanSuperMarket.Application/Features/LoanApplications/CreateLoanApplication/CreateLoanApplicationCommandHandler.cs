@@ -12,15 +12,17 @@ public sealed class CreateLoanApplicationCommandHandler
     private readonly ILoanApplicationRepository _applicationRepository;
     private readonly IBorrowerRepository _borrowerRepository;
     private readonly ILoanProductRepository _loanProductRepository;
+    private readonly IAuditLogRepository _auditLogRepository;
 
     public CreateLoanApplicationCommandHandler(
         ILoanApplicationRepository applicationRepository,
         IBorrowerRepository borrowerRepository,
-        ILoanProductRepository loanProductRepository)
+        ILoanProductRepository loanProductRepository, IAuditLogRepository auditLogRepository)
     {
         _applicationRepository = applicationRepository;
         _borrowerRepository = borrowerRepository;
         _loanProductRepository = loanProductRepository;
+        _auditLogRepository = auditLogRepository;
     }
 
     public async Task<Guid> Handle(
@@ -66,6 +68,15 @@ public sealed class CreateLoanApplicationCommandHandler
             request.Purpose);
 
         await _applicationRepository.AddAsync(application, cancellationToken);
+
+        await _auditLogRepository.AddAsync(
+            AuditLog.Create(
+                "LoanApplication",
+                application.Id,
+                "Created",
+                $"Loan application submitted for £{request.RequestedAmount:N0}."),
+            cancellationToken);
+
         await _applicationRepository.SaveChangesAsync(cancellationToken);
 
         return application.Id;

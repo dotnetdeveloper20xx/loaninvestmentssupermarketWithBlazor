@@ -1,5 +1,6 @@
 using LoanSuperMarket.Application.Common.Interfaces;
 using LoanSuperMarket.Domain.Entities;
+using LoanSuperMarket.Domain.Enums;
 using LoanSuperMarket.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 
@@ -30,6 +31,17 @@ public sealed class LoanApplicationRepository : ILoanApplicationRepository
         return await _context.LoanApplications
             .OrderByDescending(x => x.SubmittedAtUtc)
             .ToListAsync(cancellationToken);
+    }
+
+    public async Task<int> CountActiveByBorrowerIdAsync(Guid borrowerId, CancellationToken cancellationToken)
+    {
+        return await _context.LoanApplications
+            .CountAsync(x => x.BorrowerId == borrowerId
+                && (x.Status == LoanApplicationStatus.Submitted
+                    || x.Status == LoanApplicationStatus.UnderReview
+                    || x.Status == LoanApplicationStatus.Approved
+                    || x.Status == LoanApplicationStatus.Funded),
+                cancellationToken);
     }
 
     public async Task SaveChangesAsync(CancellationToken cancellationToken)

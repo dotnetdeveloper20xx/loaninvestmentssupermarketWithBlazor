@@ -7,12 +7,14 @@ using LoanSuperMarket.Application.Features.LoanApplications.RejectLoanApplicatio
 using LoanSuperMarket.Shared.Common;
 using LoanSuperMarket.Shared.LoanApplications;
 using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace LoanSuperMarket.Api.Controllers;
 
 [ApiController]
 [Route("api/loan-applications")]
+[Authorize(Policy = "CanProcessApplications")]
 public sealed class LoanApplicationsController : ControllerBase
 {
     private readonly ISender _sender;

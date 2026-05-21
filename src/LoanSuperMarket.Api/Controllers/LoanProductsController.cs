@@ -10,12 +10,14 @@ using LoanSuperMarket.Shared.Grids;
 using LoanSuperMarket.Shared.Common;
 using LoanSuperMarket.Shared.LoanProducts;
 using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace LoanSuperMarket.Api.Controllers;
 
 [ApiController]
 [Route("api/loan-products")]
+[Authorize(Policy = "CanManageProducts")]
 public sealed class LoanProductsController : ControllerBase
 {
     private readonly ISender _sender;

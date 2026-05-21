@@ -10,5 +10,11 @@ public interface ILoanApplicationRepository
 
     Task<IReadOnlyList<LoanApplication>> GetAllAsync(CancellationToken cancellationToken);
 
+    /// <summary>
+    /// Counts active loan applications for the specified borrower.
+    /// Active statuses include: Submitted, UnderReview, Approved, and Funded.
+    /// </summary>
+    Task<int> CountActiveByBorrowerIdAsync(Guid borrowerId, CancellationToken cancellationToken);
+
     Task SaveChangesAsync(CancellationToken cancellationToken);
 }

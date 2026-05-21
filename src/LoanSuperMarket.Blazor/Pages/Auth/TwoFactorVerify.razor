@@ -1,0 +1,147 @@
+@page "/2fa-verify"
+@using LoanSuperMarket.Shared.Auth
+@using LoanSuperMarket.Shared.Common
+@inject AuthApiClient AuthApiClient
+@inject NavigationManager NavigationManager
+
+<PageHeader Title="Two-Factor Verification"
+            Subtitle="Enter the code from your authenticator app." />
+
+<div class="mx-auto max-w-md">
+    <div class="rounded-2xl border border-slate-200 bg-white p-8 shadow-sm">
+        <div class="space-y-5">
+            <div class="text-center">
+                <div class="mb-4 text-4xl">🔑</div>
+                <p class="text-sm text-slate-600">
+                    Enter the 6-digit code from your authenticator app
+                    to complete sign in.
+                </p>
+            </div>
+
+            <div>
+                <label for="totpCode"
+                       class="mb-1 block text-sm font-medium text-slate-700">
+                    Authentication Code
+                </label>
+                <input id="totpCode" @bind="_totpCode"
+                       class="w-full rounded-lg border border-slate-300 px-4 py-2.5 text-center text-lg tracking-widest focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                       placeholder="000000" maxlength="6" />
+            </div>
+
+            @if (!string.IsNullOrWhiteSpace(_errorMessage))
+            {
+                <div class="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                    @_errorMessage
+                </div>
+            }
+
+            <button @onclick="HandleVerifyAsync" disabled="@_isSubmitting"
+                    class="w-full rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-50">
+                @if (_isSubmitting)
+                {
+                    <span>Verifying...</span>
+                }
+                else
+                {
+                    <span>Verify</span>
+                }
+            </button>
+
+            <div class="text-center text-sm">
+                <a href="/login" class="font-medium text-blue-600 hover:text-blue-700">
+                    Back to Sign In
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private string _totpCode = string.Empty;
+    private bool _isSubmitting;
+    private string? _errorMessage;
+    private string? _email;
+    private string? _password;
+    private bool _rememberMe;
+
+    protected override void OnInitialized()
+    {
+        // Extract login context from query parameters (passed from login page)
+        var uri = NavigationManager.ToAbsoluteUri(NavigationManager.Uri);
+
+        if (!string.IsNullOrWhiteSpace(uri.Query))
+        {
+            var queryParts = uri.Query.TrimStart('?').Split('&');
+            foreach (var part in queryParts)
+            {
+                var keyValue = part.Split('=', 2);
+                if (keyValue.Length != 2) continue;
+
+                var key = Uri.UnescapeDataString(keyValue[0]);
+                var value = Uri.UnescapeDataString(keyValue[1]);
+
+                if (key.Equals("email", StringComparison.OrdinalIgnoreCase))
+                    _email = value;
+                else if (key.Equals("password", StringComparison.OrdinalIgnoreCase))
+                    _password = value;
+                else if (key.Equals("rememberMe", StringComparison.OrdinalIgnoreCase))
+                    _rememberMe = value.Equals("true", StringComparison.OrdinalIgnoreCase);
+            }
+        }
+    }
+
+    private async Task HandleVerifyAsync()
+    {
+        if (string.IsNullOrWhiteSpace(_totpCode) || _totpCode.Length != 6)
+        {
+            _errorMessage = "Please enter a valid 6-digit code.";
+            return;
+        }
+
+        _isSubmitting = true;
+        _errorMessage = null;
+
+        try
+        {
+            if (string.IsNullOrWhiteSpace(_email) || string.IsNullOrWhiteSpace(_password))
+            {
+                _errorMessage = "Session expired. Please sign in again.";
+                return;
+            }
+
+            var loginRequest = new LoginRequest
+            {
+                Email = _email,
+                Password = _password,
+                RememberMe = _rememberMe,
+                TotpCode = _totpCode
+            };
+
+            var response = await AuthApiClient.LoginAsync(loginRequest);
+
+            if (response is null)
+            {
+                _errorMessage = "No response received from the server.";
+                return;
+            }
+
+            if (response.Success && response.Data is not null)
+            {
+                NavigationManager.NavigateTo("/");
+                return;
+            }
+
+            _errorMessage = response.Errors.Count > 0
+                ? string.Join(", ", response.Errors)
+                : response.Message ?? "Verification failed. Please try again.";
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = $"An error occurred. {ex.Message}";
+        }
+        finally
+        {
+            _isSubmitting = false;
+        }
+    }
+}

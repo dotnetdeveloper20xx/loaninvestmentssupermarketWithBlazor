@@ -1,0 +1,141 @@
+@using System.Globalization
+
+<div class="@WrapperClass">
+    <label class="mb-2 block text-sm font-semibold text-slate-700">
+        @Label
+        @if (Required)
+        {
+            <span class="text-red-500">*</span>
+        }
+    </label>
+
+    <div class="relative">
+        <div class="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none">
+            <span class="text-slate-500 text-sm font-medium">@GetCurrencySymbol()</span>
+        </div>
+
+        <input type="text"
+               class="@GetInputClass()"
+               placeholder="@Placeholder"
+               value="@_displayValue"
+               @oninput="HandleInput"
+               @onblur="HandleBlur"
+               @onfocus="HandleFocus" />
+    </div>
+
+    @if (ShowValidationSummary && !string.IsNullOrEmpty(_validationMessage))
+    {
+        <p class="mt-2 text-sm text-red-600">@_validationMessage</p>
+    }
+
+    @if (ShowRangeInfo && (MinValue.HasValue || MaxValue.HasValue))
+    {
+        <p class="mt-1 text-xs text-slate-500">
+            Range: @FormatCurrency(MinValue ?? 0) – @FormatCurrency(MaxValue ?? 999999999m)
+        </p>
+    }
+
+    @if (ValueExpression is not null)
+    {
+        <ValidationMessage For="@ValueExpression" class="mt-2 text-sm text-red-600" />
+    }
+</div>
+
+@code {
+    [Parameter] public string Label { get; set; } = string.Empty;
+    [Parameter] public string Placeholder { get; set; } = "0.00";
+    [Parameter] public string WrapperClass { get; set; } = string.Empty;
+    [Parameter] public bool Required { get; set; }
+    [Parameter] public string Currency { get; set; } = "GBP";
+    [Parameter] public decimal? MinValue { get; set; }
+    [Parameter] public decimal? MaxValue { get; set; }
+    [Parameter] public bool ShowRangeInfo { get; set; } = true;
+    [Parameter] public bool ShowValidationSummary { get; set; } = true;
+
+    [Parameter] public decimal Value { get; set; }
+    [Parameter] public EventCallback<decimal> ValueChanged { get; set; }
+    [Parameter] public Expression<Func<decimal>>? ValueExpression { get; set; }
+
+    private string _displayValue = string.Empty;
+    private bool _isFocused;
+    private string _validationMessage = string.Empty;
+
+    protected override void OnParametersSet()
+    {
+        if (!_isFocused)
+        {
+            _displayValue = Value == 0 ? string.Empty : Value.ToString("N0");
+        }
+    }
+
+    private string GetCurrencySymbol() => Currency switch
+    {
+        "GBP" => "£",
+        "USD" => "$",
+        "EUR" => "€",
+        _ => Currency
+    };
+
+    private string GetInputClass()
+    {
+        var baseClass = "w-full rounded-xl border bg-white pl-8 pr-4 py-3 text-sm text-slate-900 shadow-sm outline-none transition placeholder:text-slate-400 focus:ring-4";
+        if (!string.IsNullOrEmpty(_validationMessage))
+            return $"{baseClass} border-red-300 focus:border-red-500 focus:ring-red-100";
+        return $"{baseClass} border-slate-300 focus:border-blue-500 focus:ring-blue-100";
+    }
+
+    private string FormatCurrency(decimal value) => $"{GetCurrencySymbol()}{value:N0}";
+
+    private async Task HandleInput(ChangeEventArgs e)
+    {
+        var input = e.Value?.ToString() ?? string.Empty;
+        _displayValue = input;
+
+        var clean = input.Replace(",", "").Replace(GetCurrencySymbol(), "").Trim();
+        if (string.IsNullOrWhiteSpace(clean))
+        {
+            await SetValue(0);
+            _validationMessage = Required ? $"{Label} is required" : string.Empty;
+            return;
+        }
+
+        if (decimal.TryParse(clean, NumberStyles.Number, CultureInfo.InvariantCulture, out var parsed))
+        {
+            await SetValue(parsed);
+            _validationMessage = Validate(parsed);
+        }
+        else
+        {
+            _validationMessage = "Please enter a valid amount";
+        }
+    }
+
+    private void HandleFocus(FocusEventArgs e)
+    {
+        _isFocused = true;
+        _displayValue = Value == 0 ? string.Empty : Value.ToString("0.##");
+    }
+
+    private void HandleBlur(FocusEventArgs e)
+    {
+        _isFocused = false;
+        _displayValue = Value == 0 ? string.Empty : Value.ToString("N0");
+    }
+
+    private string Validate(decimal value)
+    {
+        if (Required && value == 0) return $"{Label} is required";
+        if (MinValue.HasValue && value < MinValue.Value) return $"Must be at least {FormatCurrency(MinValue.Value)}";
+        if (MaxValue.HasValue && value > MaxValue.Value) return $"Cannot exceed {FormatCurrency(MaxValue.Value)}";
+        return string.Empty;
+    }
+
+    private async Task SetValue(decimal value)
+    {
+        if (Value != value)
+        {
+            Value = value;
+            await ValueChanged.InvokeAsync(value);
+        }
+    }
+}

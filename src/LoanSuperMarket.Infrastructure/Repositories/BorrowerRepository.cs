@@ -28,6 +28,12 @@ public sealed class BorrowerRepository : IBorrowerRepository
             .FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
     }
 
+    public async Task<Borrower?> GetByUserIdAsync(string userId, CancellationToken cancellationToken)
+    {
+        return await _context.Borrowers
+            .FirstOrDefaultAsync(x => x.UserId == userId, cancellationToken);
+    }
+
     public async Task<IReadOnlyList<Borrower>> GetAllAsync(CancellationToken cancellationToken)
     {
         return await _context.Borrowers
