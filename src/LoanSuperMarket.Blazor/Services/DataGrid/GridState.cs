@@ -1,3 +1,5 @@
+using LoanSuperMarket.Shared.Grids;
+
 namespace LoanSuperMarket.Blazor.Services.DataGrid;
 
 public sealed class GridState
@@ -44,5 +46,18 @@ public sealed class GridState
         }
 
         return SortAscending ? "↑" : "↓";
+    }
+
+    public GridQueryRequest ToQueryRequest()
+    {
+        return new GridQueryRequest
+        {
+            SearchText = SearchText,
+            Status = SelectedStatus,
+            SortColumn = SortColumn,
+            SortDirection = SortAscending ? SortDirection.Asc : SortDirection.Desc,
+            PageNumber = PageNumber,
+            PageSize = PageSize
+        };
     }
 }

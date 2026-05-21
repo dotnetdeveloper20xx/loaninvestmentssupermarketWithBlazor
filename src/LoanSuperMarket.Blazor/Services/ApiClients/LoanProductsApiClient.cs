@@ -1,6 +1,7 @@
 using System.Net.Http.Json;
 using LoanSuperMarket.Shared.Common;
 using LoanSuperMarket.Shared.LoanProducts;
+using LoanSuperMarket.Shared.Grids;
 
 namespace LoanSuperMarket.Blazor.Services.ApiClients;
 
@@ -92,6 +93,19 @@ public sealed class LoanProductsApiClient
             cancellationToken);
 
         return await response.Content.ReadFromJsonAsync<ApiResponse<string>>(
+            cancellationToken);
+    }
+
+    public async Task<ApiResponse<PagedResult<LoanProductDto>>?> GetLoanProductsPagedAsync(
+    GridQueryRequest request,
+    CancellationToken cancellationToken = default)
+    {
+        var response = await _httpClient.PostAsJsonAsync(
+            "api/loan-products/paged",
+            request,
+            cancellationToken);
+
+        return await response.Content.ReadFromJsonAsync<ApiResponse<PagedResult<LoanProductDto>>>(
             cancellationToken);
     }
 }

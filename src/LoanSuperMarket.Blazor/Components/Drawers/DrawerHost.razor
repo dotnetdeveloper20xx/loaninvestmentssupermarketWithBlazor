@@ -1,0 +1,68 @@
+@implements IDisposable
+@inject DrawerService DrawerService
+
+@if (DrawerService.CurrentDrawer is not null)
+{
+    var drawer = DrawerService.CurrentDrawer;
+
+    <div class="fixed inset-0 z-[80]">
+        <div class="absolute inset-0 bg-slate-900/40 backdrop-blur-sm"
+             @onclick="DrawerService.CloseAsync">
+        </div>
+
+        <aside @key="drawer.Id"
+               class="@GetDrawerClass(drawer)">
+            <div class="flex items-start justify-between gap-4 border-b border-slate-200 px-6 py-5">
+                <div>
+                    <h2 class="text-xl font-bold text-slate-900">
+                        @drawer.Title
+                    </h2>
+
+                    @if (!string.IsNullOrWhiteSpace(drawer.Subtitle))
+                    {
+                        <p class="mt-1 text-sm text-slate-500">
+                            @drawer.Subtitle
+                        </p>
+                    }
+                </div>
+
+                <button type="button"
+                        class="rounded-full p-2 text-slate-400 hover:bg-slate-100 hover:text-slate-700"
+                        @onclick="DrawerService.CloseAsync">
+                    ✕
+                </button>
+            </div>
+
+            <div class="h-[calc(100vh-88px)] overflow-y-auto px-6 py-6">
+                @drawer.Content
+            </div>
+        </aside>
+    </div>
+}
+
+@code {
+    protected override void OnInitialized()
+    {
+        DrawerService.OnChange += HandleDrawerChanged;
+    }
+
+    private void HandleDrawerChanged()
+    {
+        _ = InvokeAsync(StateHasChanged);
+    }
+
+    private static string GetDrawerClass(DrawerRequest drawer)
+    {
+        var baseClass =
+            "absolute right-0 top-0 h-full w-full max-w-xl bg-white shadow-2xl transition-transform duration-300 ease-in-out";
+
+        return drawer.IsClosing
+            ? $"{baseClass} translate-x-full"
+            : $"{baseClass} translate-x-0";
+    }
+
+    public void Dispose()
+    {
+        DrawerService.OnChange -= HandleDrawerChanged;
+    }
+}

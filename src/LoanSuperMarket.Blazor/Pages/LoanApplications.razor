@@ -2,6 +2,7 @@
 @inject LoanApplicationsApiClient LoanApplicationsApiClient
 @inject ToastService ToastService
 @inject ModalService ModalService
+@inject DrawerService DrawerService
 
 <PageHeader Title="Loan Applications"
             Subtitle="Manage borrower applications, review status and funding pipeline.">
@@ -166,6 +167,10 @@
                                 disabled="@(_activeWorkflowId == application.Id || application.Status != "Approved")"
                                 @onclick="() => ConfirmFund(application.Id)">
                             Fund
+                        </button>
+                        <button class="rounded-lg border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                                @onclick="() => OpenApplicationDrawer(application)">
+                            View
                         </button>
                     </div>
                 </td>
@@ -442,5 +447,58 @@
         {
             _activeWorkflowId = null;
         }
+    }
+
+    private void OpenApplicationDrawer(LoanApplicationDto application)
+    {
+        DrawerService.Open(new DrawerRequest
+        {
+            Title = "Loan Application",
+            Subtitle = application.Status,
+            Content = builder =>
+            {
+                var sequence = 0;
+
+                builder.OpenElement(sequence++, "div");
+                builder.AddAttribute(sequence++, "class", "space-y-6");
+
+                builder.OpenElement(sequence++, "div");
+                builder.AddAttribute(sequence++, "class", "rounded-2xl border border-slate-200 bg-slate-50 p-5");
+                builder.AddMarkupContent(sequence++, $"<div class='text-sm font-semibold text-slate-500'>Purpose</div><div class='mt-1 text-slate-900'>{application.Purpose}</div>");
+                builder.CloseElement();
+
+                builder.OpenElement(sequence++, "div");
+                builder.AddAttribute(sequence++, "class", "grid grid-cols-1 gap-4 md:grid-cols-2");
+
+                builder.OpenElement(sequence++, "div");
+                builder.AddAttribute(sequence++, "class", "rounded-2xl border border-slate-200 bg-slate-50 p-5");
+                builder.AddMarkupContent(sequence++, $"<div class='text-sm font-semibold text-slate-500'>Requested Amount</div><div class='mt-1 text-slate-900'>£{application.RequestedAmount:N0}</div>");
+                builder.CloseElement();
+
+                builder.OpenElement(sequence++, "div");
+                builder.AddAttribute(sequence++, "class", "rounded-2xl border border-slate-200 bg-slate-50 p-5");
+                builder.AddMarkupContent(sequence++, $"<div class='text-sm font-semibold text-slate-500'>Term</div><div class='mt-1 text-slate-900'>{application.TermMonths} months</div>");
+                builder.CloseElement();
+
+                builder.CloseElement();
+
+                builder.OpenElement(sequence++, "div");
+                builder.AddAttribute(sequence++, "class", "rounded-2xl border border-slate-200 bg-slate-50 p-5");
+                builder.AddMarkupContent(sequence++, $"<div class='text-sm font-semibold text-slate-500'>Borrower ID</div><div class='mt-1 break-all font-mono text-xs text-slate-900'>{application.BorrowerId}</div>");
+                builder.CloseElement();
+
+                builder.OpenElement(sequence++, "div");
+                builder.AddAttribute(sequence++, "class", "rounded-2xl border border-slate-200 bg-slate-50 p-5");
+                builder.AddMarkupContent(sequence++, $"<div class='text-sm font-semibold text-slate-500'>Loan Product ID</div><div class='mt-1 break-all font-mono text-xs text-slate-900'>{application.LoanProductId}</div>");
+                builder.CloseElement();
+
+                builder.OpenElement(sequence++, "div");
+                builder.AddAttribute(sequence++, "class", "rounded-2xl border border-slate-200 bg-slate-50 p-5");
+                builder.AddMarkupContent(sequence++, $"<div class='text-sm font-semibold text-slate-500'>Submitted</div><div class='mt-1 text-slate-900'>{application.SubmittedAtUtc.ToLocalTime():dd MMM yyyy HH:mm}</div>");
+                builder.CloseElement();
+
+                builder.CloseElement();
+            }
+        });
     }
 }

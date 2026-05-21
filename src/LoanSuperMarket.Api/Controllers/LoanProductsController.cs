@@ -5,6 +5,8 @@ using LoanSuperMarket.Application.Features.LoanProducts.GetLoanProductById;
 using LoanSuperMarket.Application.Features.LoanProducts.GetLoanProducts;
 using LoanSuperMarket.Application.Features.LoanProducts.PublishLoanProduct;
 using LoanSuperMarket.Application.Features.LoanProducts.SubmitLoanProductForApproval;
+using LoanSuperMarket.Application.Features.LoanProducts.GetLoanProductsPaged;
+using LoanSuperMarket.Shared.Grids;
 using LoanSuperMarket.Shared.Common;
 using LoanSuperMarket.Shared.LoanProducts;
 using MediatR;
@@ -130,5 +132,19 @@ public sealed class LoanProductsController : ControllerBase
         return Ok(ApiResponse<string>.Ok(
             "Loan product archived.",
             "Workflow action completed."));
+    }
+
+    [HttpPost("paged")]
+    public async Task<ActionResult<ApiResponse<PagedResult<LoanProductDto>>>> GetLoanProductsPaged(
+    [FromBody] GridQueryRequest request,
+    CancellationToken cancellationToken)
+    {
+        var result = await _sender.Send(
+            new GetLoanProductsPagedQuery(request),
+            cancellationToken);
+
+        return Ok(ApiResponse<PagedResult<LoanProductDto>>.Ok(
+            result,
+            "Loan products retrieved successfully."));
     }
 }

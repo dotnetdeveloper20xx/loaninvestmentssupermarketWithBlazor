@@ -1,5 +1,6 @@
 @page "/borrowers"
 @inject BorrowersApiClient BorrowersApiClient
+@inject DrawerService DrawerService
 
 <PageHeader Title="Borrowers"
             Subtitle="Manage borrower profiles, verification status and onboarding records.">
@@ -94,6 +95,9 @@
                                   Title="Created"
                                   OnSortChanged="HandleGridStateChanged" />
         </th>
+        <th class="px-6 py-4 text-right text-xs font-semibold uppercase tracking-wide text-slate-500">
+            Actions
+        </th>
     </HeaderTemplate>
 
     <RowTemplate>
@@ -120,6 +124,12 @@
 
                 <td class="px-6 py-4 text-sm text-slate-500">
                     @borrower.CreatedAtUtc.ToLocalTime().ToString("dd MMM yyyy")
+                </td>
+                <td class="px-6 py-4 text-right">
+                    <button class="rounded-lg border border-blue-200 px-3 py-2 text-xs font-semibold text-blue-700 hover:bg-blue-50"
+                            @onclick="() => OpenBorrowerDrawer(borrower)">
+                        Quick View
+                    </button>
                 </td>
             </tr>
         }
@@ -265,5 +275,48 @@
     private void ClearFilters()
     {
         _gridState.ClearFilters();
+    }
+
+    private void OpenBorrowerDrawer(BorrowerDto borrower)
+    {
+        DrawerService.Open(new DrawerRequest
+        {
+            Title = borrower.FullName,
+            Subtitle = "Borrower quick view",
+            Content = builder =>
+            {
+                var sequence = 0;
+
+                builder.OpenElement(sequence++, "div");
+                builder.AddAttribute(sequence++, "class", "space-y-6");
+
+                builder.OpenElement(sequence++, "div");
+                builder.AddAttribute(sequence++, "class", "rounded-2xl border border-slate-200 bg-slate-50 p-5");
+                builder.AddMarkupContent(sequence++, $"<div class='text-sm font-semibold text-slate-500'>Email</div><div class='mt-1 text-slate-900'>{borrower.Email}</div>");
+                builder.CloseElement();
+
+                builder.OpenElement(sequence++, "div");
+                builder.AddAttribute(sequence++, "class", "rounded-2xl border border-slate-200 bg-slate-50 p-5");
+                builder.AddMarkupContent(sequence++, $"<div class='text-sm font-semibold text-slate-500'>Phone</div><div class='mt-1 text-slate-900'>{borrower.PhoneNumber}</div>");
+                builder.CloseElement();
+
+                builder.OpenElement(sequence++, "div");
+                builder.AddAttribute(sequence++, "class", "rounded-2xl border border-slate-200 bg-slate-50 p-5");
+                builder.AddMarkupContent(sequence++, $"<div class='text-sm font-semibold text-slate-500'>Date of Birth</div><div class='mt-1 text-slate-900'>{borrower.DateOfBirth:dd MMM yyyy}</div>");
+                builder.CloseElement();
+
+                builder.OpenElement(sequence++, "div");
+                builder.AddAttribute(sequence++, "class", "rounded-2xl border border-slate-200 bg-slate-50 p-5");
+                builder.AddMarkupContent(sequence++, $"<div class='text-sm font-semibold text-slate-500'>Status</div><div class='mt-1 text-slate-900'>{borrower.Status}</div>");
+                builder.CloseElement();
+
+                builder.OpenElement(sequence++, "div");
+                builder.AddAttribute(sequence++, "class", "rounded-2xl border border-slate-200 bg-slate-50 p-5");
+                builder.AddMarkupContent(sequence++, $"<div class='text-sm font-semibold text-slate-500'>Created</div><div class='mt-1 text-slate-900'>{borrower.CreatedAtUtc.ToLocalTime():dd MMM yyyy HH:mm}</div>");
+                builder.CloseElement();
+
+                builder.CloseElement();
+            }
+        });
     }
 }

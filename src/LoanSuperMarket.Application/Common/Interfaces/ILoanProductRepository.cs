@@ -1,4 +1,7 @@
 using LoanSuperMarket.Domain.Entities;
+using LoanSuperMarket.Shared.Common;
+using LoanSuperMarket.Shared.Grids;
+using LoanSuperMarket.Shared.LoanProducts;
 
 namespace LoanSuperMarket.Application.Common.Interfaces;
 
@@ -11,4 +14,7 @@ public interface ILoanProductRepository
     Task<IReadOnlyList<LoanProduct>> GetAllAsync(CancellationToken cancellationToken);
 
     Task SaveChangesAsync(CancellationToken cancellationToken);
+    Task<PagedResult<LoanProductDto>> GetPagedAsync(
+    GridQueryRequest request,
+    CancellationToken cancellationToken);
 }

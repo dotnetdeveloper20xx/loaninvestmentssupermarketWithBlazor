@@ -22,15 +22,15 @@
 <DataGridToolbar State="_gridState"
                  SearchLabel="Search products"
                  SearchPlaceholder="Search by title or description..."
-                 VisibleCount="PagedLoanProducts.Count"
-                 TotalCount="_loanProducts.Count"
+                 VisibleCount="_loanProducts.Count"
+                 TotalCount="_totalCount"
                  StatusOptions="_statusOptions"
-                 OnStateChanged="HandleGridStateChanged" />
+                 OnStateChanged="ReloadGridAsync" />
 
 <AppDataTable Title="Loan Product Management"
               Subtitle="Operational view of lender products, marketplace status and lending criteria."
               IsLoading="_isLoading"
-              IsEmpty="@(!_isLoading && FilteredLoanProducts.Count == 0)"
+              IsEmpty="@(!_isLoading && _loanProducts.Count == 0)"
               LoadingText="Loading loan products..."
               EmptyIcon="🏦"
               EmptyTitle="No loan products found"
@@ -38,13 +38,13 @@
 
     <HeaderActions>
         <button class="rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm hover:bg-slate-50"
-                @onclick="LoadLoanProductsAsync">
+                @onclick="ReloadGridAsync">
             Refresh
         </button>
     </HeaderActions>
 
     <EmptyActions>
-        @if (_loanProducts.Count == 0)
+        @if (_totalCount == 0 && string.IsNullOrWhiteSpace(_gridState.SearchText) && string.IsNullOrWhiteSpace(_gridState.SelectedStatus))
         {
             <button class="rounded-xl bg-blue-600 px-5 py-3 text-sm font-semibold text-white shadow-sm hover:bg-blue-700"
                     @onclick="OpenCreateModal">
@@ -54,7 +54,7 @@
         else
         {
             <button class="rounded-xl border border-slate-300 bg-white px-5 py-3 text-sm font-semibold text-slate-700 shadow-sm hover:bg-slate-50"
-                    @onclick="ClearFilters">
+                    @onclick="ClearFiltersAsync">
                 Clear Filters
             </button>
         }
@@ -65,42 +65,42 @@
             <DataGridColumnHeader State="_gridState"
                                   Column="Title"
                                   Title="Product"
-                                  OnSortChanged="HandleGridStateChanged" />
+                                  OnSortChanged="ReloadGridAsync" />
         </th>
 
         <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
             <DataGridColumnHeader State="_gridState"
                                   Column="MinimumAmount"
                                   Title="Amount Range"
-                                  OnSortChanged="HandleGridStateChanged" />
+                                  OnSortChanged="ReloadGridAsync" />
         </th>
 
         <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
             <DataGridColumnHeader State="_gridState"
                                   Column="InterestRate"
                                   Title="Interest"
-                                  OnSortChanged="HandleGridStateChanged" />
+                                  OnSortChanged="ReloadGridAsync" />
         </th>
 
         <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
             <DataGridColumnHeader State="_gridState"
                                   Column="MaximumTermMonths"
                                   Title="Term"
-                                  OnSortChanged="HandleGridStateChanged" />
+                                  OnSortChanged="ReloadGridAsync" />
         </th>
 
         <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
             <DataGridColumnHeader State="_gridState"
                                   Column="Status"
                                   Title="Status"
-                                  OnSortChanged="HandleGridStateChanged" />
+                                  OnSortChanged="ReloadGridAsync" />
         </th>
 
         <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
             <DataGridColumnHeader State="_gridState"
                                   Column="CreatedAtUtc"
                                   Title="Created"
-                                  OnSortChanged="HandleGridStateChanged" />
+                                  OnSortChanged="ReloadGridAsync" />
         </th>
 
         <th class="px-6 py-4 text-right text-xs font-semibold uppercase tracking-wide text-slate-500">
@@ -109,7 +109,7 @@
     </HeaderTemplate>
 
     <RowTemplate>
-        @foreach (var product in PagedLoanProducts)
+        @foreach (var product in _loanProducts)
         {
             <tr class="hover:bg-slate-50">
                 <td class="px-6 py-4">
@@ -117,6 +117,7 @@
                         <div class="font-semibold text-slate-900">
                             @product.Title
                         </div>
+
                         <div class="mt-1 max-w-sm truncate text-sm text-slate-500">
                             @product.Description
                         </div>
@@ -155,8 +156,8 @@
 </AppDataTable>
 
 <DataGridPager State="_gridState"
-               TotalCount="FilteredLoanProducts.Count"
-               OnPageChanged="HandleGridStateChanged" />
+               TotalCount="_totalCount"
+               OnPageChanged="ReloadGridAsync" />
 
 <CreateLoanProductModal IsOpen="_isCreateModalOpen"
                         OnClose="CloseCreateModal"
@@ -175,75 +176,25 @@
     ];
 
     private List<LoanProductDto> _loanProducts = [];
+    private int _totalCount;
     private bool _isLoading = true;
     private bool _isCreateModalOpen;
     private string? _errorMessage;
 
-    private List<LoanProductDto> FilteredLoanProducts
-    {
-        get
-        {
-            var query = _loanProducts.AsEnumerable();
-
-            if (!string.IsNullOrWhiteSpace(_gridState.SearchText))
-            {
-                query = query.Where(product =>
-                    product.Title.Contains(_gridState.SearchText, StringComparison.OrdinalIgnoreCase)
-                    || product.Description.Contains(_gridState.SearchText, StringComparison.OrdinalIgnoreCase));
-            }
-
-            if (!string.IsNullOrWhiteSpace(_gridState.SelectedStatus))
-            {
-                query = query.Where(product =>
-                    product.Status.Equals(_gridState.SelectedStatus, StringComparison.OrdinalIgnoreCase));
-            }
-
-            query = (_gridState.SortColumn, _gridState.SortAscending) switch
-            {
-                ("Title", true) => query.OrderBy(product => product.Title),
-                ("Title", false) => query.OrderByDescending(product => product.Title),
-
-                ("MinimumAmount", true) => query.OrderBy(product => product.MinimumAmount),
-                ("MinimumAmount", false) => query.OrderByDescending(product => product.MinimumAmount),
-
-                ("InterestRate", true) => query.OrderBy(product => product.InterestRate),
-                ("InterestRate", false) => query.OrderByDescending(product => product.InterestRate),
-
-                ("MaximumTermMonths", true) => query.OrderBy(product => product.MaximumTermMonths),
-                ("MaximumTermMonths", false) => query.OrderByDescending(product => product.MaximumTermMonths),
-
-                ("Status", true) => query.OrderBy(product => product.Status),
-                ("Status", false) => query.OrderByDescending(product => product.Status),
-
-                ("CreatedAtUtc", true) => query.OrderBy(product => product.CreatedAtUtc),
-                ("CreatedAtUtc", false) => query.OrderByDescending(product => product.CreatedAtUtc),
-
-                _ => query.OrderByDescending(product => product.CreatedAtUtc)
-            };
-
-            return query.ToList();
-        }
-    }
-
-    private List<LoanProductDto> PagedLoanProducts =>
-        FilteredLoanProducts
-            .Skip((_gridState.PageNumber - 1) * _gridState.PageSize)
-            .Take(_gridState.PageSize)
-            .ToList();
-
     protected override async Task OnInitializedAsync()
     {
-        await LoadLoanProductsAsync();
+        await ReloadGridAsync();
     }
 
-    private async Task LoadLoanProductsAsync()
+    private async Task ReloadGridAsync()
     {
         _isLoading = true;
         _errorMessage = null;
 
         try
         {
-            var response = await LoanProductsApiClient.GetLoanProductsAsync();
+            var response = await LoanProductsApiClient.GetLoanProductsPagedAsync(
+                _gridState.ToQueryRequest());
 
             if (response is null)
             {
@@ -260,7 +211,8 @@
                 return;
             }
 
-            _loanProducts = response.Data?.ToList() ?? [];
+            _loanProducts = response.Data?.Items.ToList() ?? [];
+            _totalCount = response.Data?.TotalCount ?? 0;
         }
         catch (Exception exception)
         {
@@ -272,10 +224,10 @@
         }
     }
 
-    private Task HandleGridStateChanged()
+    private async Task ClearFiltersAsync()
     {
-        StateHasChanged();
-        return Task.CompletedTask;
+        _gridState.ClearFilters();
+        await ReloadGridAsync();
     }
 
     private void OpenCreateModal()
@@ -290,16 +242,11 @@
 
     private async Task HandleLoanProductCreated()
     {
-        await LoadLoanProductsAsync();
+        await ReloadGridAsync();
     }
 
     private void ViewDetails(Guid id)
     {
         NavigationManager.NavigateTo($"/loan-products/{id}");
-    }
-
-    private void ClearFilters()
-    {
-        _gridState.ClearFilters();
     }
 }
