@@ -35,4 +35,12 @@ public interface IEmailService
         string userName,
         IReadOnlyList<string> requiredDocuments,
         CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Sends a password reset email with the reset token/link.
+    /// </summary>
+    Task SendPasswordResetAsync(
+        string email,
+        string resetToken,
+        CancellationToken cancellationToken = default);
 }

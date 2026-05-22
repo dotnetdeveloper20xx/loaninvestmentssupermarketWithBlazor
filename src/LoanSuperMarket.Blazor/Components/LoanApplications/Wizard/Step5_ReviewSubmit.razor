@@ -1,0 +1,187 @@
+@namespace LoanSuperMarket.Blazor.Components.LoanApplications.Wizard
+@using LoanSuperMarket.Blazor.Services
+@using LoanSuperMarket.Blazor.Services.ApiClients
+@using LoanSuperMarket.Shared.LoanApplications
+@inject WizardStateService WizardState
+@inject WizardApiClient WizardApi
+@inject NavigationManager NavigationManager
+
+<div class="space-y-6">
+    <h2 class="text-lg font-semibold text-slate-800">Review & Submit</h2>
+    <p class="text-sm text-slate-500">Review your application details before submitting.</p>
+
+    @if (_isSubmitted)
+    {
+        <div class="rounded-xl bg-green-50 border border-green-200 p-6 text-center">
+            <div class="text-3xl mb-2">🎉</div>
+            <h3 class="text-lg font-semibold text-green-800">Application Submitted!</h3>
+            <p class="text-sm text-green-600 mt-1">Your loan application has been submitted for review.</p>
+            <button @onclick="GoToDashboard"
+                    class="mt-4 rounded-lg bg-green-600 px-6 py-2.5 text-sm font-semibold text-white hover:bg-green-700 transition">
+                Go to Dashboard
+            </button>
+        </div>
+    }
+    else
+    {
+        @* Application Summary *@
+        <div class="rounded-xl border border-slate-200 divide-y divide-slate-100">
+            <div class="p-4">
+                <h3 class="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-3">Loan Details</h3>
+                <dl class="grid grid-cols-2 gap-3 text-sm">
+                    <div>
+                        <dt class="text-slate-500">Purpose</dt>
+                        <dd class="font-medium text-slate-800 mt-0.5">@(_summary?.Purpose ?? "—")</dd>
+                    </div>
+                    <div>
+                        <dt class="text-slate-500">Requested Amount</dt>
+                        <dd class="font-medium text-slate-800 mt-0.5">@(_summary?.RequestedAmount.ToString("N2") ?? "—")</dd>
+                    </div>
+                    <div>
+                        <dt class="text-slate-500">Term</dt>
+                        <dd class="font-medium text-slate-800 mt-0.5">@(_summary?.TermMonths ?? 0) months</dd>
+                    </div>
+                    <div>
+                        <dt class="text-slate-500">Selected Product</dt>
+                        <dd class="font-medium text-slate-800 mt-0.5">@(_summary?.ProductTitle ?? "—")</dd>
+                    </div>
+                </dl>
+            </div>
+
+            <div class="p-4">
+                <h3 class="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-3">Documents</h3>
+                @if (_documents.Count > 0)
+                {
+                    <ul class="space-y-2">
+                        @foreach (var doc in _documents)
+                        {
+                            <li class="flex items-center gap-2 text-sm">
+                                <span class="text-green-600">✓</span>
+                                <span class="text-slate-700">@doc.FileName</span>
+                                <span class="text-xs text-slate-400">(@GetDocumentTypeName(doc.Type))</span>
+                            </li>
+                        }
+                    </ul>
+                }
+                else
+                {
+                    <p class="text-sm text-slate-400">No documents uploaded.</p>
+                }
+            </div>
+        </div>
+
+        @if (!string.IsNullOrEmpty(_error))
+        {
+            <div class="rounded-lg bg-red-50 border border-red-200 p-3 text-sm text-red-700">
+                @_error
+            </div>
+        }
+
+        <div class="flex justify-between pt-4">
+            <button @onclick="HandleBack"
+                    class="rounded-lg border border-slate-300 px-6 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50 transition">
+                ← Back
+            </button>
+            <button @onclick="HandleSubmitAsync"
+                    disabled="@_isSubmitting"
+                    class="rounded-lg bg-blue-600 px-6 py-2.5 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition">
+                @if (_isSubmitting)
+                {
+                    <span>Submitting...</span>
+                }
+                else
+                {
+                    <span>Submit Application</span>
+                }
+            </button>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter] public EventCallback OnBack { get; set; }
+
+    private ApplicationDetailDto? _summary;
+    private List<ApplicationDocumentDto> _documents = new();
+    private bool _isSubmitting;
+    private bool _isSubmitted;
+    private string? _error;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadSummaryAsync();
+    }
+
+    private async Task LoadSummaryAsync()
+    {
+        if (!WizardState.ApplicationId.HasValue)
+            return;
+
+        try
+        {
+            var docsResult = await WizardApi.GetDocumentsAsync(WizardState.ApplicationId.Value);
+            if (docsResult is not null && docsResult.Success && docsResult.Data is not null)
+            {
+                _documents = docsResult.Data.ToList();
+            }
+        }
+        catch
+        {
+            // Non-critical
+        }
+    }
+
+    private async Task HandleSubmitAsync()
+    {
+        if (!WizardState.ApplicationId.HasValue)
+        {
+            _error = "Application not found.";
+            return;
+        }
+
+        _isSubmitting = true;
+        _error = null;
+
+        try
+        {
+            var result = await WizardApi.SubmitAsync(WizardState.ApplicationId.Value);
+            if (result is not null && result.Success)
+            {
+                _isSubmitted = true;
+            }
+            else
+            {
+                _error = result?.Errors.FirstOrDefault() ?? "Failed to submit application.";
+            }
+        }
+        catch (Exception ex)
+        {
+            _error = $"An error occurred: {ex.Message}";
+        }
+        finally
+        {
+            _isSubmitting = false;
+        }
+    }
+
+    private async Task HandleBack()
+    {
+        await OnBack.InvokeAsync();
+    }
+
+    private void GoToDashboard()
+    {
+        WizardState.Reset();
+        NavigationManager.NavigateTo("/borrower/dashboard");
+    }
+
+    private static string GetDocumentTypeName(int type) => type switch
+    {
+        1 => "National ID",
+        2 => "Proof of Income",
+        3 => "Bank Statement",
+        4 => "Address Proof",
+        5 => "Other",
+        _ => "Document"
+    };
+}

@@ -1,4 +1,5 @@
 using LoanSuperMarket.Application.Common.Interfaces;
+using LoanSuperMarket.Application.Features.Sessions.Commands.RevokeAllSessions;
 using LoanSuperMarket.Application.Features.Sessions.Commands.RevokeSession;
 using LoanSuperMarket.Application.Features.Sessions.Queries.GetUserSessions;
 using LoanSuperMarket.Application.Features.Users.Models;
@@ -43,6 +44,15 @@ public sealed class SessionController : ControllerBase
         CancellationToken cancellationToken)
     {
         var result = await _sender.Send(new RevokeSessionCommand(id), cancellationToken);
+
+        return Ok(result);
+    }
+
+    [HttpPost("revoke-all")]
+    public async Task<ActionResult<ApiResponse<string>>> RevokeAllSessions(
+        CancellationToken cancellationToken)
+    {
+        var result = await _sender.Send(new RevokeAllSessionsCommand(), cancellationToken);
 
         return Ok(result);
     }

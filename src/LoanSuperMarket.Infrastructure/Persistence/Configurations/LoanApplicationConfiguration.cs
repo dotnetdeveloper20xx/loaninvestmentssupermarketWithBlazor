@@ -17,7 +17,7 @@ public sealed class LoanApplicationConfiguration : IEntityTypeConfiguration<Loan
             .IsRequired();
 
         builder.Property(x => x.LoanProductId)
-            .IsRequired();
+            .IsRequired(false);
 
         builder.OwnsOne(x => x.RequestedAmount, money =>
         {
@@ -41,11 +41,22 @@ public sealed class LoanApplicationConfiguration : IEntityTypeConfiguration<Loan
 
         builder.Property(x => x.Status)
             .HasConversion<int>()
-            .HasDefaultValue(LoanApplicationStatus.Submitted)
+            .HasDefaultValue(LoanApplicationStatus.Draft)
             .IsRequired();
 
         builder.Property(x => x.SubmittedAtUtc)
-            .IsRequired();
+            .IsRequired(false);
+
+        builder.Property(x => x.ReviewedBy)
+            .HasMaxLength(450);
+
+        builder.Property(x => x.ReviewReason)
+            .HasMaxLength(2000);
+
+        builder.Property(x => x.ReviewedAtUtc);
+
+        builder.Property(x => x.DocumentRequestNote)
+            .HasMaxLength(2000);
 
         builder.Property(x => x.CreatedAtUtc)
             .IsRequired();
@@ -55,6 +66,11 @@ public sealed class LoanApplicationConfiguration : IEntityTypeConfiguration<Loan
 
         builder.Property(x => x.UpdatedBy)
             .HasMaxLength(150);
+
+        builder.HasMany(x => x.Documents)
+            .WithOne(x => x.LoanApplication)
+            .HasForeignKey(x => x.LoanApplicationId)
+            .OnDelete(DeleteBehavior.Cascade);
 
         builder.HasIndex(x => x.BorrowerId);
         builder.HasIndex(x => x.LoanProductId);

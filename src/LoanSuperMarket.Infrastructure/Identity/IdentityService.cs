@@ -270,4 +270,34 @@ public sealed class IdentityService : IIdentityService
         var users = await _userManager.GetUsersInRoleAsync(roleName);
         return users.ToList().AsReadOnly();
     }
+
+    /// <inheritdoc />
+    public async Task<bool> IsLockedOutAsync(
+        string email,
+        CancellationToken cancellationToken = default)
+    {
+        var user = await _userManager.FindByEmailAsync(email);
+
+        if (user is null)
+        {
+            return false;
+        }
+
+        return await _userManager.IsLockedOutAsync(user);
+    }
+
+    /// <inheritdoc />
+    public async Task<DateTimeOffset?> GetLockoutEndDateAsync(
+        string email,
+        CancellationToken cancellationToken = default)
+    {
+        var user = await _userManager.FindByEmailAsync(email);
+
+        if (user is null)
+        {
+            return null;
+        }
+
+        return await _userManager.GetLockoutEndDateAsync(user);
+    }
 }

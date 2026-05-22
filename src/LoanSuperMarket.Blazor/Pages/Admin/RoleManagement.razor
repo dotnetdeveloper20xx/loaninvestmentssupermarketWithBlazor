@@ -1,0 +1,586 @@
+@page "/admin/roles"
+@using LoanSuperMarket.Shared.Common
+@using LoanSuperMarket.Shared.Roles
+@attribute [Microsoft.AspNetCore.Authorization.Authorize(Roles = "Admin")]
+@inject HttpClient Http
+
+<PageHeader Title="Role Management"
+            Subtitle="Manage custom roles, assign permissions, and simulate user access.">
+    <ActionContent>
+        <button class="rounded-xl bg-blue-600 px-5 py-3 text-sm font-semibold text-white shadow-sm hover:bg-blue-700"
+                @onclick="OpenCreateRoleModal">
+            + New Role
+        </button>
+    </ActionContent>
+</PageHeader>
+
+@if (!string.IsNullOrWhiteSpace(_errorMessage))
+{
+    <div class="mb-6 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+        @_errorMessage
+    </div>
+}
+
+@if (!string.IsNullOrWhiteSpace(_successMessage))
+{
+    <div class="mb-6 rounded-2xl border border-green-200 bg-green-50 p-4 text-sm text-green-700">
+        @_successMessage
+    </div>
+}
+
+<!-- Roles Table -->
+<div class="rounded-2xl border border-slate-200 bg-white shadow-sm">
+    <div class="border-b border-slate-200 px-6 py-4 flex items-center justify-between">
+        <div>
+            <h2 class="text-lg font-semibold text-slate-900">Roles</h2>
+            <p class="mt-1 text-sm text-slate-500">@_roles.Count roles configured</p>
+        </div>
+        <button class="rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm hover:bg-slate-50"
+                @onclick="LoadRolesAsync">
+            Refresh
+        </button>
+    </div>
+
+    @if (_isLoading)
+    {
+        <div class="flex items-center justify-center py-12">
+            <p class="text-sm text-slate-500">Loading roles...</p>
+        </div>
+    }
+    else if (_roles.Count == 0)
+    {
+        <div class="flex flex-col items-center justify-center py-12">
+            <span class="text-4xl">🔐</span>
+            <p class="mt-3 text-sm font-medium text-slate-700">No roles found</p>
+            <p class="mt-1 text-sm text-slate-500">Create a custom role to get started.</p>
+        </div>
+    }
+    else
+    {
+        <div class="overflow-x-auto">
+            <table class="w-full">
+                <thead class="border-b border-slate-200 bg-slate-50">
+                    <tr>
+                        <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">Role Name</th>
+                        <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">Description</th>
+                        <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">Type</th>
+                        <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">Users</th>
+                        <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">Created</th>
+                        <th class="px-6 py-4 text-right text-xs font-semibold uppercase tracking-wide text-slate-500">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100">
+                    @foreach (var role in _roles)
+                    {
+                        <tr class="hover:bg-slate-50">
+                            <td class="px-6 py-4">
+                                <div class="font-semibold text-slate-900">@role.Name</div>
+                            </td>
+                            <td class="px-6 py-4 text-sm text-slate-600">
+                                @(role.Description ?? "—")
+                            </td>
+                            <td class="px-6 py-4">
+                                @if (role.IsSystemRole)
+                                {
+                                    <span class="inline-flex rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-700">
+                                        System
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span class="inline-flex rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-medium text-blue-700">
+                                        Custom
+                                    </span>
+                                }
+                            </td>
+                            <td class="px-6 py-4 text-sm text-slate-700">
+                                @role.UserCount
+                            </td>
+                            <td class="px-6 py-4 text-sm text-slate-500">
+                                @role.CreatedAtUtc.ToLocalTime().ToString("dd MMM yyyy")
+                            </td>
+                            <td class="px-6 py-4 text-right">
+                                <div class="flex items-center justify-end gap-2">
+                                    <button class="rounded-lg border border-blue-200 px-3 py-1.5 text-xs font-semibold text-blue-700 hover:bg-blue-50"
+                                            @onclick="() => OpenEditRoleModal(role)">
+                                        Edit
+                                    </button>
+                                    @if (!role.IsSystemRole)
+                                    {
+                                        <button class="rounded-lg border border-red-200 px-3 py-1.5 text-xs font-semibold text-red-700 hover:bg-red-50"
+                                                @onclick="() => OpenDeleteConfirmation(role)">
+                                            Delete
+                                        </button>
+                                    }
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>
+
+<!-- Permission Simulation Tool -->
+<div class="mt-8 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+    <h2 class="text-lg font-semibold text-slate-900">Permission Simulation</h2>
+    <p class="mt-1 text-sm text-slate-500">Test what effective permissions a user has based on their assigned roles.</p>
+
+    <div class="mt-4 flex gap-3">
+        <input type="text" @bind="_simulateUserId" placeholder="Enter User ID or email..."
+               class="flex-1 rounded-lg border border-slate-300 px-4 py-2.5 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500" />
+        <button class="rounded-lg bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-blue-700"
+                disabled="@(string.IsNullOrWhiteSpace(_simulateUserId) || _isSimulating)"
+                @onclick="SimulatePermissionsAsync">
+            @(_isSimulating ? "Simulating..." : "Simulate")
+        </button>
+    </div>
+
+    @if (_simulationResult is not null)
+    {
+        <div class="mt-6 space-y-4">
+            <div class="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                <div class="text-sm font-medium text-slate-500">User</div>
+                <div class="mt-1 text-slate-900">@_simulationResult.UserEmail</div>
+            </div>
+
+            <div class="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                <div class="text-sm font-medium text-slate-500">Assigned Roles</div>
+                <div class="mt-2 flex flex-wrap gap-1">
+                    @foreach (var role in _simulationResult.AssignedRoles)
+                    {
+                        <span class="inline-flex rounded-full bg-blue-100 px-2.5 py-1 text-xs font-medium text-blue-700">
+                            @role
+                        </span>
+                    }
+                </div>
+            </div>
+
+            <div class="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                <div class="text-sm font-medium text-slate-500">Effective Policies</div>
+                <div class="mt-2 flex flex-wrap gap-1">
+                    @foreach (var policy in _simulationResult.EffectivePolicies)
+                    {
+                        <span class="inline-flex rounded-full bg-green-100 px-2.5 py-1 text-xs font-medium text-green-700">
+                            @policy
+                        </span>
+                    }
+                </div>
+            </div>
+
+            <div class="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                <div class="text-sm font-medium text-slate-500">Effective Permissions</div>
+                <div class="mt-2">
+                    @if (_simulationResult.EffectivePermissions.Count == 0)
+                    {
+                        <p class="text-sm text-slate-500">No granular permissions assigned.</p>
+                    }
+                    else
+                    {
+                        <div class="grid grid-cols-1 gap-1 sm:grid-cols-2 lg:grid-cols-3">
+                            @foreach (var perm in _simulationResult.EffectivePermissions)
+                            {
+                                <span class="inline-flex rounded bg-purple-50 px-2 py-1 text-xs font-medium text-purple-700">
+                                    @perm.Module.@perm.Action
+                                </span>
+                            }
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+<!-- Create/Edit Role Modal -->
+@if (_showRoleModal)
+{
+    <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/50" @onclick="CloseRoleModal">
+        <div class="w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-2xl bg-white p-6 shadow-xl" @onclick:stopPropagation="true">
+            <h3 class="mb-4 text-lg font-semibold text-slate-900">
+                @(_isEditMode ? "Edit Role" : "Create New Role")
+            </h3>
+            <div class="space-y-4">
+                <div>
+                    <label class="mb-1 block text-sm font-medium text-slate-700">Role Name</label>
+                    <input type="text" @bind="_roleName" disabled="@_isEditMode"
+                           class="w-full rounded-lg border border-slate-300 px-4 py-2.5 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:bg-slate-100"
+                           placeholder="e.g. SeniorManager" />
+                </div>
+                <div>
+                    <label class="mb-1 block text-sm font-medium text-slate-700">Description</label>
+                    <textarea @bind="_roleDescription" rows="2"
+                              class="w-full rounded-lg border border-slate-300 px-4 py-2.5 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                              placeholder="Describe the role's purpose..."></textarea>
+                </div>
+
+                <!-- Permissions Grid -->
+                <div>
+                    <label class="mb-2 block text-sm font-medium text-slate-700">Permissions</label>
+                    <div class="rounded-lg border border-slate-200 overflow-hidden">
+                        <table class="w-full text-sm">
+                            <thead class="bg-slate-50">
+                                <tr>
+                                    <th class="px-3 py-2 text-left text-xs font-semibold text-slate-500">Module</th>
+                                    @foreach (var action in _allActions)
+                                    {
+                                        <th class="px-3 py-2 text-center text-xs font-semibold text-slate-500">@action</th>
+                                    }
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-100">
+                                @foreach (var module in _allModules)
+                                {
+                                    <tr class="hover:bg-slate-50">
+                                        <td class="px-3 py-2 text-xs font-medium text-slate-700">@module</td>
+                                        @foreach (var action in _allActions)
+                                        {
+                                            var key = $"{module}.{action}";
+                                            <td class="px-3 py-2 text-center">
+                                                <input type="checkbox"
+                                                       checked="@_selectedPermissions.Contains(key)"
+                                                       @onchange="(e) => TogglePermission(key, (bool)(e.Value ?? false))"
+                                                       class="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500" />
+                                            </td>
+                                        }
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="flex justify-end gap-3 pt-2">
+                    <button class="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+                            @onclick="CloseRoleModal">
+                        Cancel
+                    </button>
+                    <button class="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700"
+                            disabled="@_isSubmitting"
+                            @onclick="SaveRoleAsync">
+                        @(_isSubmitting ? "Saving..." : (_isEditMode ? "Update Role" : "Create Role"))
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+<!-- Delete Confirmation Modal -->
+@if (_showDeleteModal && _deleteRole is not null)
+{
+    <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/50" @onclick="CloseDeleteModal">
+        <div class="w-full max-w-sm rounded-2xl bg-white p-6 shadow-xl" @onclick:stopPropagation="true">
+            <h3 class="mb-2 text-lg font-semibold text-slate-900">Delete Role</h3>
+            <p class="mb-4 text-sm text-slate-600">
+                Are you sure you want to delete the role <strong>@_deleteRole.Name</strong>?
+                This action cannot be undone.
+            </p>
+            @if (_deleteRole.UserCount > 0)
+            {
+                <div class="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
+                    This role is currently assigned to @_deleteRole.UserCount user(s).
+                </div>
+            }
+            <div class="flex justify-end gap-3">
+                <button class="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+                        @onclick="CloseDeleteModal">
+                    Cancel
+                </button>
+                <button class="rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700"
+                        disabled="@_isSubmitting"
+                        @onclick="DeleteRoleAsync">
+                    @(_isSubmitting ? "Deleting..." : "Delete")
+                </button>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private List<RoleDto> _roles = [];
+    private bool _isLoading = true;
+    private bool _isSubmitting;
+    private string? _errorMessage;
+    private string? _successMessage;
+
+    // Role modal
+    private bool _showRoleModal;
+    private bool _isEditMode;
+    private string _editRoleId = string.Empty;
+    private string _roleName = string.Empty;
+    private string _roleDescription = string.Empty;
+    private HashSet<string> _selectedPermissions = new();
+
+    // Delete modal
+    private bool _showDeleteModal;
+    private RoleDto? _deleteRole;
+
+    // Permission simulation
+    private string _simulateUserId = string.Empty;
+    private bool _isSimulating;
+    private PermissionSimulationResult? _simulationResult;
+
+    // Available modules and actions
+    private static readonly string[] _allModules =
+    [
+        "UserManagement", "LoanManagement", "ProductManagement",
+        "FinancialOperations", "Reports", "SystemSettings", "Messaging"
+    ];
+
+    private static readonly string[] _allActions =
+    [
+        "View", "Create", "Edit", "Delete", "Approve"
+    ];
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadRolesAsync();
+    }
+
+    private async Task LoadRolesAsync()
+    {
+        _isLoading = true;
+        _errorMessage = null;
+
+        try
+        {
+            var response = await Http.GetFromJsonAsync<ApiResponse<IReadOnlyList<RoleDto>>>("api/roles");
+
+            if (response is null)
+            {
+                _errorMessage = "No response received from the API.";
+                return;
+            }
+
+            if (!response.Success)
+            {
+                _errorMessage = response.Errors.Count > 0
+                    ? string.Join(", ", response.Errors)
+                    : "Failed to load roles.";
+                return;
+            }
+
+            _roles = response.Data?.ToList() ?? [];
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = $"Unable to load roles. {ex.Message}";
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    // Create Role
+    private void OpenCreateRoleModal()
+    {
+        _isEditMode = false;
+        _editRoleId = string.Empty;
+        _roleName = string.Empty;
+        _roleDescription = string.Empty;
+        _selectedPermissions = new HashSet<string>();
+        _showRoleModal = true;
+    }
+
+    // Edit Role
+    private async Task OpenEditRoleModal(RoleDto role)
+    {
+        _isEditMode = true;
+        _editRoleId = role.Id;
+        _roleName = role.Name;
+        _roleDescription = role.Description ?? string.Empty;
+        _selectedPermissions = new HashSet<string>();
+        _showRoleModal = true;
+
+        // Load existing permissions for this role
+        try
+        {
+            var response = await Http.GetFromJsonAsync<ApiResponse<IReadOnlyList<PermissionDto>>>(
+                $"api/roles/{role.Id}/permissions");
+
+            if (response?.Success == true && response.Data is not null)
+            {
+                foreach (var perm in response.Data)
+                {
+                    _selectedPermissions.Add($"{perm.Module}.{perm.Action}");
+                }
+            }
+        }
+        catch
+        {
+            // Permissions will start empty if load fails
+        }
+
+        StateHasChanged();
+    }
+
+    private void CloseRoleModal()
+    {
+        _showRoleModal = false;
+    }
+
+    private void TogglePermission(string key, bool isChecked)
+    {
+        if (isChecked)
+            _selectedPermissions.Add(key);
+        else
+            _selectedPermissions.Remove(key);
+    }
+
+    private async Task SaveRoleAsync()
+    {
+        if (string.IsNullOrWhiteSpace(_roleName)) return;
+
+        _isSubmitting = true;
+        _errorMessage = null;
+        _successMessage = null;
+
+        try
+        {
+            var permissions = _selectedPermissions
+                .Select(p =>
+                {
+                    var parts = p.Split('.');
+                    return new { Module = parts[0], Action = parts[1] };
+                })
+                .ToList();
+
+            if (_isEditMode)
+            {
+                var body = new { Description = _roleDescription, Permissions = permissions };
+                var response = await Http.PutAsJsonAsync($"api/roles/{_editRoleId}", body);
+                var result = await response.Content.ReadFromJsonAsync<ApiResponse<string>>();
+
+                if (result?.Success == true)
+                {
+                    _successMessage = $"Role '{_roleName}' updated successfully.";
+                    CloseRoleModal();
+                    await LoadRolesAsync();
+                }
+                else
+                {
+                    _errorMessage = result?.Errors.Count > 0
+                        ? string.Join(", ", result.Errors)
+                        : "Failed to update role.";
+                }
+            }
+            else
+            {
+                var body = new { Name = _roleName, Description = _roleDescription, Permissions = permissions };
+                var response = await Http.PostAsJsonAsync("api/roles", body);
+                var result = await response.Content.ReadFromJsonAsync<ApiResponse<string>>();
+
+                if (result?.Success == true)
+                {
+                    _successMessage = $"Role '{_roleName}' created successfully.";
+                    CloseRoleModal();
+                    await LoadRolesAsync();
+                }
+                else
+                {
+                    _errorMessage = result?.Errors.Count > 0
+                        ? string.Join(", ", result.Errors)
+                        : "Failed to create role.";
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = $"Error saving role. {ex.Message}";
+        }
+        finally
+        {
+            _isSubmitting = false;
+        }
+    }
+
+    // Delete Role
+    private void OpenDeleteConfirmation(RoleDto role)
+    {
+        _deleteRole = role;
+        _showDeleteModal = true;
+    }
+
+    private void CloseDeleteModal()
+    {
+        _showDeleteModal = false;
+        _deleteRole = null;
+    }
+
+    private async Task DeleteRoleAsync()
+    {
+        if (_deleteRole is null) return;
+
+        _isSubmitting = true;
+        _errorMessage = null;
+        _successMessage = null;
+
+        try
+        {
+            var response = await Http.DeleteAsync($"api/roles/{_deleteRole.Id}");
+            var result = await response.Content.ReadFromJsonAsync<ApiResponse<string>>();
+
+            if (result?.Success == true)
+            {
+                _successMessage = $"Role '{_deleteRole.Name}' deleted successfully.";
+                CloseDeleteModal();
+                await LoadRolesAsync();
+            }
+            else
+            {
+                _errorMessage = result?.Errors.Count > 0
+                    ? string.Join(", ", result.Errors)
+                    : "Failed to delete role.";
+            }
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = $"Error deleting role. {ex.Message}";
+        }
+        finally
+        {
+            _isSubmitting = false;
+        }
+    }
+
+    // Permission Simulation
+    private async Task SimulatePermissionsAsync()
+    {
+        if (string.IsNullOrWhiteSpace(_simulateUserId)) return;
+
+        _isSimulating = true;
+        _errorMessage = null;
+        _simulationResult = null;
+
+        try
+        {
+            var response = await Http.PostAsync(
+                $"api/roles/simulate/{Uri.EscapeDataString(_simulateUserId)}",
+                null);
+
+            var result = await response.Content.ReadFromJsonAsync<ApiResponse<PermissionSimulationResult>>();
+
+            if (result?.Success == true && result.Data is not null)
+            {
+                _simulationResult = result.Data;
+            }
+            else
+            {
+                _errorMessage = result?.Errors.Count > 0
+                    ? string.Join(", ", result.Errors)
+                    : "Failed to simulate permissions. Ensure the User ID is valid.";
+            }
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = $"Error simulating permissions. {ex.Message}";
+        }
+        finally
+        {
+            _isSimulating = false;
+        }
+    }
+}

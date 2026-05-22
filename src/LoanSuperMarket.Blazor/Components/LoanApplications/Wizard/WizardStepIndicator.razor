@@ -1,0 +1,64 @@
+@namespace LoanSuperMarket.Blazor.Components.LoanApplications.Wizard
+
+<div class="flex items-center justify-between mb-8">
+    @for (int i = 1; i <= TotalSteps; i++)
+    {
+        var step = i;
+        var isActive = step == CurrentStep;
+        var isCompleted = step < CurrentStep;
+
+        <div class="flex flex-col items-center flex-1">
+            <div class="flex items-center w-full">
+                @if (step > 1)
+                {
+                    <div class="flex-1 h-0.5 @(isCompleted || isActive ? "bg-blue-600" : "bg-slate-300")"></div>
+                }
+                else
+                {
+                    <div class="flex-1"></div>
+                }
+
+                <div class="flex items-center justify-center w-10 h-10 rounded-full text-sm font-semibold
+                    @(isActive ? "bg-blue-600 text-white shadow-lg shadow-blue-200" :
+                      isCompleted ? "bg-blue-600 text-white" :
+                      "bg-slate-200 text-slate-500")">
+                    @if (isCompleted)
+                    {
+                        <span>✓</span>
+                    }
+                    else
+                    {
+                        <span>@step</span>
+                    }
+                </div>
+
+                @if (step < TotalSteps)
+                {
+                    <div class="flex-1 h-0.5 @(isCompleted ? "bg-blue-600" : "bg-slate-300")"></div>
+                }
+                else
+                {
+                    <div class="flex-1"></div>
+                }
+            </div>
+            <span class="mt-2 text-xs font-medium @(isActive ? "text-blue-600" : isCompleted ? "text-slate-700" : "text-slate-400")">
+                @GetStepLabel(step)
+            </span>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter] public int CurrentStep { get; set; } = 1;
+    [Parameter] public int TotalSteps { get; set; } = 5;
+
+    private static string GetStepLabel(int step) => step switch
+    {
+        1 => "Parameters",
+        2 => "Matching",
+        3 => "Selection",
+        4 => "Documents",
+        5 => "Review",
+        _ => $"Step {step}"
+    };
+}

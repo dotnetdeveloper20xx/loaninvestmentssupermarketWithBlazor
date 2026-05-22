@@ -35,6 +35,14 @@ public sealed class LoanProductRepository : ILoanProductRepository
             .ToListAsync(cancellationToken);
     }
 
+    public async Task<IReadOnlyList<LoanProduct>> GetPublishedAsync(CancellationToken cancellationToken)
+    {
+        return await _context.LoanProducts
+            .Where(x => x.Status == Domain.Enums.LoanProductStatus.Published)
+            .OrderByDescending(x => x.CreatedAtUtc)
+            .ToListAsync(cancellationToken);
+    }
+
     public async Task SaveChangesAsync(CancellationToken cancellationToken)
     {
         await _context.SaveChangesAsync(cancellationToken);

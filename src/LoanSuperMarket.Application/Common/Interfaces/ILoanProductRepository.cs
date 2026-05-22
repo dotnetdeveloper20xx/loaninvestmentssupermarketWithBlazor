@@ -13,6 +13,8 @@ public interface ILoanProductRepository
 
     Task<IReadOnlyList<LoanProduct>> GetAllAsync(CancellationToken cancellationToken);
 
+    Task<IReadOnlyList<LoanProduct>> GetPublishedAsync(CancellationToken cancellationToken);
+
     Task SaveChangesAsync(CancellationToken cancellationToken);
     Task<PagedResult<LoanProductDto>> GetPagedAsync(
     GridQueryRequest request,

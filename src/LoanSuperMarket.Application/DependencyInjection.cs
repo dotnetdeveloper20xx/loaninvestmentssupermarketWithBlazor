@@ -1,5 +1,6 @@
 using FluentValidation;
 using LoanSuperMarket.Application.Common.Behaviours;
+using LoanSuperMarket.Application.Features.LoanApplications.ProductMatching;
 using MediatR;
 using Microsoft.Extensions.DependencyInjection;
 using System.Reflection;
@@ -25,6 +26,8 @@ public static class DependencyInjection
         services.AddTransient(typeof(IPipelineBehavior<,>), typeof(AccountStatusBehaviour<,>));
         services.AddTransient(typeof(IPipelineBehavior<,>), typeof(LimitEnforcementBehaviour<,>));
         services.AddTransient(typeof(IPipelineBehavior<,>), typeof(ResourceAuthorizationBehaviour<,>));
+
+        services.AddScoped<ProductMatchingService>();
 
         return services;
     }

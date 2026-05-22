@@ -1,8 +1,10 @@
 using LoanSuperMarket.Application.Common.Interfaces;
+using LoanSuperMarket.Application.Features.LoanApplications.ProductMatching;
 using LoanSuperMarket.Domain.Entities.Identity;
 using LoanSuperMarket.Infrastructure.Identity;
 using LoanSuperMarket.Infrastructure.Persistence;
 using LoanSuperMarket.Infrastructure.Repositories;
+using LoanSuperMarket.Infrastructure.Services;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -68,6 +70,13 @@ public static class DependencyInjection
         services.AddScoped<IPermissionResolver, PermissionResolver>();
 
         services.AddScoped<IRoleManagementService, RoleManagementService>();
+
+        services.AddScoped<IClientInfoProvider, ClientInfoProvider>();
+        services.AddScoped<IEmailService, NoOpEmailService>();
+
+        services.AddScoped<IApplicationDocumentRepository, ApplicationDocumentRepository>();
+        services.AddScoped<IDocumentStorageService, StubDocumentStorageService>();
+        services.AddScoped<ProductMatchingService>();
 
         return services;
     }

@@ -26,25 +26,30 @@ public sealed class LoginCommandHandler : IRequestHandler<LoginCommand, ApiRespo
     private readonly ITwoFactorService _twoFactorService;
     private readonly ISessionService _sessionService;
     private readonly IAuditLogRepository _auditLogRepository;
+    private readonly IClientInfoProvider _clientInfoProvider;
 
     public LoginCommandHandler(
         IIdentityService identityService,
         ITokenService tokenService,
         ITwoFactorService twoFactorService,
         ISessionService sessionService,
-        IAuditLogRepository auditLogRepository)
+        IAuditLogRepository auditLogRepository,
+        IClientInfoProvider clientInfoProvider)
     {
         _identityService = identityService;
         _tokenService = tokenService;
         _twoFactorService = twoFactorService;
         _sessionService = sessionService;
         _auditLogRepository = auditLogRepository;
+        _clientInfoProvider = clientInfoProvider;
     }
 
     public async Task<ApiResponse<AuthTokenResponse>> Handle(
         LoginCommand request,
         CancellationToken cancellationToken)
     {
+        var ipAddress = _clientInfoProvider.IpAddress ?? "unknown";
+
         // Validate credentials - returns same generic error for wrong email or wrong password
         var credentialsValid = await _identityService.ValidateCredentialsAsync(
             request.Email,
@@ -53,7 +58,26 @@ public sealed class LoginCommandHandler : IRequestHandler<LoginCommand, ApiRespo
 
         if (!credentialsValid)
         {
-            await RecordFailedLoginAuditAsync(request.Email, cancellationToken);
+            await RecordFailedLoginAuditAsync(request.Email, ipAddress, cancellationToken);
+
+            // Check if the failed attempt triggered a lockout
+            var isLockedOut = await _identityService.IsLockedOutAsync(
+                request.Email,
+                cancellationToken);
+
+            if (isLockedOut)
+            {
+                var lockoutEnd = await _identityService.GetLockoutEndDateAsync(
+                    request.Email,
+                    cancellationToken);
+
+                var duration = lockoutEnd.HasValue
+                    ? $"{(lockoutEnd.Value - DateTimeOffset.UtcNow).TotalMinutes:F0} minutes"
+                    : "unknown duration";
+
+                await RecordAccountLockedAuditAsync(request.Email, ipAddress, duration, cancellationToken);
+            }
+
             return ApiResponse<AuthTokenResponse>.Fail(GenericLoginError);
         }
 
@@ -70,7 +94,7 @@ public sealed class LoginCommandHandler : IRequestHandler<LoginCommand, ApiRespo
         var statusCheckResult = CheckAccountStatus(user.AccountStatus);
         if (statusCheckResult is not null)
         {
-            await RecordFailedLoginAuditAsync(request.Email, cancellationToken);
+            await RecordFailedLoginAuditAsync(request.Email, ipAddress, cancellationToken);
             return ApiResponse<AuthTokenResponse>.Fail(statusCheckResult);
         }
 
@@ -97,7 +121,7 @@ public sealed class LoginCommandHandler : IRequestHandler<LoginCommand, ApiRespo
 
             if (!codeValid)
             {
-                await RecordFailedLoginAuditAsync(request.Email, cancellationToken);
+                await RecordFailedLoginAuditAsync(request.Email, ipAddress, cancellationToken);
                 return ApiResponse<AuthTokenResponse>.Fail(TwoFactorInvalidError);
             }
         }
@@ -109,7 +133,7 @@ public sealed class LoginCommandHandler : IRequestHandler<LoginCommand, ApiRespo
             cancellationToken);
 
         // Create session
-        var sessionInfo = new SessionInfo(null, null, null);
+        var sessionInfo = new SessionInfo(null, ipAddress, null);
         await _sessionService.CreateSessionAsync(
             user.Id,
             tokenResponse.RefreshToken,
@@ -120,7 +144,7 @@ public sealed class LoginCommandHandler : IRequestHandler<LoginCommand, ApiRespo
         user.LastLoginAtUtc = DateTime.UtcNow;
 
         // Record successful login audit
-        await RecordSuccessfulLoginAuditAsync(user.Id, request.Email, cancellationToken);
+        await RecordSuccessfulLoginAuditAsync(user.Id, request.Email, ipAddress, cancellationToken);
 
         return ApiResponse<AuthTokenResponse>.Ok(tokenResponse, "Login successful.");
     }
@@ -136,13 +160,13 @@ public sealed class LoginCommandHandler : IRequestHandler<LoginCommand, ApiRespo
         };
     }
 
-    private async Task RecordFailedLoginAuditAsync(string email, CancellationToken cancellationToken)
+    private async Task RecordFailedLoginAuditAsync(string email, string ipAddress, CancellationToken cancellationToken)
     {
         var auditLog = AuditLog.Create(
             "ApplicationUser",
             entityId: null,
             "LoginFailed",
-            $"Failed login attempt for email: {email}");
+            $"Failed login attempt for email: {email}, IP: {ipAddress}");
 
         await _auditLogRepository.AddAsync(auditLog, cancellationToken);
     }
@@ -150,14 +174,30 @@ public sealed class LoginCommandHandler : IRequestHandler<LoginCommand, ApiRespo
     private async Task RecordSuccessfulLoginAuditAsync(
         string userId,
         string email,
+        string ipAddress,
         CancellationToken cancellationToken)
     {
         var auditLog = AuditLog.Create(
             "ApplicationUser",
             entityId: null,
             "Login",
-            $"Successful login for user: {email}",
+            $"Successful login for user: {email}, IP: {ipAddress}",
             performedBy: userId);
+
+        await _auditLogRepository.AddAsync(auditLog, cancellationToken);
+    }
+
+    private async Task RecordAccountLockedAuditAsync(
+        string email,
+        string ipAddress,
+        string duration,
+        CancellationToken cancellationToken)
+    {
+        var auditLog = AuditLog.Create(
+            "ApplicationUser",
+            entityId: null,
+            "AccountLocked",
+            $"Account locked for email: {email}, duration: {duration}, IP: {ipAddress}");
 
         await _auditLogRepository.AddAsync(auditLog, cancellationToken);
     }

@@ -25,13 +25,13 @@ public sealed class GetLoanApplicationsQueryHandler
             {
                 Id = x.Id,
                 BorrowerId = x.BorrowerId,
-                LoanProductId = x.LoanProductId,
+                LoanProductId = x.LoanProductId ?? Guid.Empty,
                 RequestedAmount = x.RequestedAmount.Amount,
                 Currency = x.RequestedAmount.Currency,
                 TermMonths = x.TermMonths,
                 Purpose = x.Purpose,
                 Status = x.Status.ToString(),
-                SubmittedAtUtc = x.SubmittedAtUtc,
+                SubmittedAtUtc = x.SubmittedAtUtc ?? DateTime.MinValue,
                 CreatedAtUtc = x.CreatedAtUtc
             })
             .ToList();

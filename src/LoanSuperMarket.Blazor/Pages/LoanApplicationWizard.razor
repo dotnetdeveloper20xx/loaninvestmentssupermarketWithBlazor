@@ -1,0 +1,68 @@
+@page "/wizard"
+@page "/wizard/{ApplicationId:guid}"
+@using LoanSuperMarket.Blazor.Components.LoanApplications.Wizard
+@using LoanSuperMarket.Blazor.Services
+@using LoanSuperMarket.Blazor.Services.ApiClients
+@using Microsoft.AspNetCore.Authorization
+@attribute [Authorize(Roles = "Borrower")]
+@inject WizardStateService WizardState
+@inject WizardApiClient WizardApi
+@inject NavigationManager NavigationManager
+
+<div class="max-w-4xl mx-auto">
+    <div class="mb-6">
+        <h1 class="text-2xl font-bold text-slate-900">Loan Application</h1>
+        <p class="text-sm text-slate-500 mt-1">Complete the steps below to submit your loan application.</p>
+    </div>
+
+    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 lg:p-8">
+        <WizardStepIndicator CurrentStep="@WizardState.CurrentStep" TotalSteps="5" />
+
+        @switch (WizardState.CurrentStep)
+        {
+            case 1:
+                <Step1_LoanParameters OnNext="HandleStepAdvance" />
+                break;
+            case 2:
+                <Step2_ProductMatching OnNext="HandleStepAdvance" OnBack="HandleStepBack" />
+                break;
+            case 3:
+                <Step3_ProductSelection OnNext="HandleStepAdvance" OnBack="HandleStepBack" />
+                break;
+            case 4:
+                <Step4_DocumentUpload OnNext="HandleStepAdvance" OnBack="HandleStepBack" />
+                break;
+            case 5:
+                <Step5_ReviewSubmit OnBack="HandleStepBack" />
+                break;
+        }
+    </div>
+</div>
+
+@code {
+    [Parameter] public Guid? ApplicationId { get; set; }
+
+    protected override void OnInitialized()
+    {
+        if (ApplicationId.HasValue)
+        {
+            WizardState.SetApplicationId(ApplicationId.Value);
+        }
+        else if (WizardState.ApplicationId is null)
+        {
+            WizardState.Reset();
+        }
+    }
+
+    private void HandleStepAdvance()
+    {
+        WizardState.GoToStep(WizardState.CurrentStep + 1);
+        StateHasChanged();
+    }
+
+    private void HandleStepBack()
+    {
+        WizardState.GoToStep(WizardState.CurrentStep - 1);
+        StateHasChanged();
+    }
+}

@@ -71,9 +71,10 @@ public sealed class LoanApplicationsController : ControllerBase
     [HttpPost("{id:guid}/approve")]
     public async Task<ActionResult<ApiResponse<string>>> Approve(
         Guid id,
+        [FromBody] ApproveRejectRequest request,
         CancellationToken cancellationToken)
     {
-        await _sender.Send(new ApproveLoanApplicationCommand(id), cancellationToken);
+        await _sender.Send(new ApproveLoanApplicationCommand(id, request.Reason), cancellationToken);
 
         return Ok(ApiResponse<string>.Ok(
             "Loan application approved.",
@@ -83,9 +84,10 @@ public sealed class LoanApplicationsController : ControllerBase
     [HttpPost("{id:guid}/reject")]
     public async Task<ActionResult<ApiResponse<string>>> Reject(
         Guid id,
+        [FromBody] ApproveRejectRequest request,
         CancellationToken cancellationToken)
     {
-        await _sender.Send(new RejectLoanApplicationCommand(id), cancellationToken);
+        await _sender.Send(new RejectLoanApplicationCommand(id, request.Reason), cancellationToken);
 
         return Ok(ApiResponse<string>.Ok(
             "Loan application rejected.",

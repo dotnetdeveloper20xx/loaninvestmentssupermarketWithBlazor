@@ -72,7 +72,7 @@ public sealed class VettingController : ControllerBase
     [HttpPost("{id}/request-docs")]
     public async Task<ActionResult<ApiResponse<string>>> RequestDocuments(
         string id,
-        [FromBody] RequestDocumentsRequest request,
+        [FromBody] VettingRequestDocumentsRequest request,
         CancellationToken cancellationToken)
     {
         var command = new RequestDocumentsCommand(id, request.RequiredDocuments);
@@ -93,4 +93,4 @@ public sealed record ApproveRegistrationRequest(
 
 public sealed record RejectRegistrationRequest(string Reason);
 
-public sealed record RequestDocumentsRequest(IReadOnlyList<string> RequiredDocuments);
+public sealed record VettingRequestDocumentsRequest(IReadOnlyList<string> RequiredDocuments);

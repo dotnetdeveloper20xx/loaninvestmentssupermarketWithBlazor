@@ -29,6 +29,42 @@
                     </Authorized>
                 </AuthorizeView>
 
+                @* Apply for Loan - Borrower *@
+                <AuthorizeView Roles="Borrower">
+                    <Authorized>
+                        <NavLink href="wizard"
+                                 class="flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-blue-100 hover:bg-white/10"
+                                 activeClass="bg-[#2563EB] text-white shadow-lg shadow-blue-900/30">
+                            <span>🚀</span>
+                            <span>Apply for Loan</span>
+                        </NavLink>
+                    </Authorized>
+                </AuthorizeView>
+
+                @* My Applications - Borrower *@
+                <AuthorizeView Roles="Borrower">
+                    <Authorized>
+                        <NavLink href="borrower/dashboard"
+                                 class="flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-blue-100 hover:bg-white/10"
+                                 activeClass="bg-[#2563EB] text-white shadow-lg shadow-blue-900/30">
+                            <span>📋</span>
+                            <span>My Applications</span>
+                        </NavLink>
+                    </Authorized>
+                </AuthorizeView>
+
+                @* Review Queue - CrmManager, Admin *@
+                <AuthorizeView Roles="Admin,CrmManager">
+                    <Authorized>
+                        <NavLink href="review-queue"
+                                 class="flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-blue-100 hover:bg-white/10"
+                                 activeClass="bg-[#2563EB] text-white shadow-lg shadow-blue-900/30">
+                            <span>🔍</span>
+                            <span>Review Queue</span>
+                        </NavLink>
+                    </Authorized>
+                </AuthorizeView>
+
                 @* Loan Applications - Admin, CrmManager, Lender, Borrower *@
                 <AuthorizeView Roles="Admin,CrmManager,Lender,Borrower">
                     <Authorized>

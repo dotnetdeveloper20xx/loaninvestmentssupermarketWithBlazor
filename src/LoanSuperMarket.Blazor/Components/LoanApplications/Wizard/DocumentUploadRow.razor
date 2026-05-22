@@ -1,0 +1,68 @@
+@namespace LoanSuperMarket.Blazor.Components.LoanApplications.Wizard
+@using LoanSuperMarket.Shared.LoanApplications
+@using Microsoft.AspNetCore.Components.Forms
+
+<div class="flex items-center justify-between rounded-lg border border-slate-200 p-4">
+    <div class="flex items-center gap-3">
+        <div class="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-sm">
+            @if (UploadedDoc is not null)
+            {
+                <span class="text-green-600">✓</span>
+            }
+            else
+            {
+                <span class="text-slate-400">📄</span>
+            }
+        </div>
+        <div>
+            <div class="text-sm font-medium text-slate-700">@Label</div>
+            @if (UploadedDoc is not null)
+            {
+                <div class="text-xs text-slate-500">@UploadedDoc.FileName</div>
+            }
+            else
+            {
+                <div class="text-xs text-slate-400">No file uploaded</div>
+            }
+        </div>
+    </div>
+
+    <div class="flex items-center gap-2">
+        @if (IsUploading)
+        {
+            <span class="text-xs text-blue-600">Uploading...</span>
+        }
+        else if (UploadedDoc is not null)
+        {
+            <button @onclick="() => OnRemove.InvokeAsync(UploadedDoc.Id)"
+                    class="rounded-md border border-red-200 px-3 py-1.5 text-xs font-medium text-red-600 hover:bg-red-50 transition">
+                Remove
+            </button>
+        }
+        else
+        {
+            <label class="cursor-pointer rounded-md bg-slate-100 px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-200 transition">
+                Choose File
+                <InputFile OnChange="HandleFileSelected" class="hidden" />
+            </label>
+        }
+    </div>
+</div>
+
+@code {
+    [Parameter] public string Label { get; set; } = string.Empty;
+    [Parameter] public int DocumentType { get; set; }
+    [Parameter] public ApplicationDocumentDto? UploadedDoc { get; set; }
+    [Parameter] public EventCallback<(int DocumentType, IBrowserFile File)> OnUpload { get; set; }
+    [Parameter] public EventCallback<Guid> OnRemove { get; set; }
+    [Parameter] public bool IsUploading { get; set; }
+
+    private async Task HandleFileSelected(InputFileChangeEventArgs e)
+    {
+        var file = e.File;
+        if (file is not null)
+        {
+            await OnUpload.InvokeAsync((DocumentType, file));
+        }
+    }
+}

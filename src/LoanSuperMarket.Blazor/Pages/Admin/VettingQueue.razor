@@ -1,0 +1,522 @@
+@page "/vetting"
+@using LoanSuperMarket.Shared.Common
+@using LoanSuperMarket.Shared.Users
+@attribute [Microsoft.AspNetCore.Authorization.Authorize(Roles = "CrmManager")]
+@inject HttpClient Http
+
+<PageHeader Title="Vetting Queue"
+            Subtitle="Review and process pending user registrations awaiting approval." />
+
+@if (!string.IsNullOrWhiteSpace(_errorMessage))
+{
+    <div class="mb-6 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+        @_errorMessage
+    </div>
+}
+
+@if (!string.IsNullOrWhiteSpace(_successMessage))
+{
+    <div class="mb-6 rounded-2xl border border-green-200 bg-green-50 p-4 text-sm text-green-700">
+        @_successMessage
+    </div>
+}
+
+<!-- Vetting Queue Table -->
+<div class="rounded-2xl border border-slate-200 bg-white shadow-sm">
+    <div class="border-b border-slate-200 px-6 py-4 flex items-center justify-between">
+        <div>
+            <h2 class="text-lg font-semibold text-slate-900">Pending Registrations</h2>
+            <p class="mt-1 text-sm text-slate-500">@_totalCount applicants awaiting review</p>
+        </div>
+        <button class="rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm hover:bg-slate-50"
+                @onclick="LoadQueueAsync">
+            Refresh
+        </button>
+    </div>
+
+    @if (_isLoading)
+    {
+        <div class="flex items-center justify-center py-12">
+            <p class="text-sm text-slate-500">Loading vetting queue...</p>
+        </div>
+    }
+    else if (_items.Count == 0)
+    {
+        <div class="flex flex-col items-center justify-center py-12">
+            <span class="text-4xl">✅</span>
+            <p class="mt-3 text-sm font-medium text-slate-700">Queue is empty</p>
+            <p class="mt-1 text-sm text-slate-500">All pending registrations have been processed.</p>
+        </div>
+    }
+    else
+    {
+        <div class="overflow-x-auto">
+            <table class="w-full">
+                <thead class="border-b border-slate-200 bg-slate-50">
+                    <tr>
+                        <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">Name</th>
+                        <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">Email</th>
+                        <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">User Type</th>
+                        <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">Registration Date</th>
+                        <th class="px-6 py-4 text-right text-xs font-semibold uppercase tracking-wide text-slate-500">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100">
+                    @foreach (var item in _items)
+                    {
+                        <tr class="hover:bg-slate-50">
+                            <td class="px-6 py-4">
+                                <div class="font-semibold text-slate-900">@item.FullName</div>
+                                @if (!string.IsNullOrWhiteSpace(item.CompanyName))
+                                {
+                                    <div class="mt-1 text-xs text-slate-500">@item.CompanyName</div>
+                                }
+                            </td>
+                            <td class="px-6 py-4 text-sm text-slate-700">
+                                <div>@item.Email</div>
+                                @if (item.EmailConfirmed)
+                                {
+                                    <span class="mt-1 inline-flex text-xs text-green-600">✓ Verified</span>
+                                }
+                                else
+                                {
+                                    <span class="mt-1 inline-flex text-xs text-amber-600">⚠ Unverified</span>
+                                }
+                            </td>
+                            <td class="px-6 py-4">
+                                <span class="inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium
+                                    @(item.UserType == "Borrower" ? "bg-purple-100 text-purple-700" : "bg-emerald-100 text-emerald-700")">
+                                    @item.UserType
+                                </span>
+                            </td>
+                            <td class="px-6 py-4 text-sm text-slate-500">
+                                @item.RegisteredAtUtc.ToLocalTime().ToString("dd MMM yyyy HH:mm")
+                            </td>
+                            <td class="px-6 py-4 text-right">
+                                <div class="flex items-center justify-end gap-2">
+                                    <button class="rounded-lg bg-green-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-green-700"
+                                            @onclick="() => OpenApproveModal(item)">
+                                        Approve
+                                    </button>
+                                    <button class="rounded-lg border border-red-200 px-3 py-1.5 text-xs font-semibold text-red-700 hover:bg-red-50"
+                                            @onclick="() => OpenRejectModal(item)">
+                                        Reject
+                                    </button>
+                                    <button class="rounded-lg border border-amber-200 px-3 py-1.5 text-xs font-semibold text-amber-700 hover:bg-amber-50"
+                                            @onclick="() => OpenRequestDocsModal(item)">
+                                        Request Docs
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>
+
+<!-- Pagination -->
+@if (_totalPages > 1)
+{
+    <div class="mt-6 flex items-center justify-between">
+        <p class="text-sm text-slate-500">
+            Page @_currentPage of @_totalPages (@_totalCount total)
+        </p>
+        <div class="flex gap-2">
+            <button disabled="@(_currentPage <= 1)"
+                    class="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+                    @onclick="PreviousPage">
+                Previous
+            </button>
+            <button disabled="@(_currentPage >= _totalPages)"
+                    class="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+                    @onclick="NextPage">
+                Next
+            </button>
+        </div>
+    </div>
+}
+
+<!-- Approve Modal -->
+@if (_showApproveModal && _approveItem is not null)
+{
+    <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/50" @onclick="CloseApproveModal">
+        <div class="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl" @onclick:stopPropagation="true">
+            <h3 class="mb-4 text-lg font-semibold text-slate-900">Approve Registration</h3>
+            <p class="mb-4 text-sm text-slate-600">
+                Approving <strong>@_approveItem.FullName</strong> (@_approveItem.UserType)
+            </p>
+            <div class="space-y-4">
+                @if (_approveItem.UserType == "Borrower")
+                {
+                    <div>
+                        <label class="mb-1 block text-sm font-medium text-slate-700">Credit Tier</label>
+                        <select @bind="_approveCreditTier"
+                                class="w-full rounded-lg border border-slate-300 px-4 py-2.5 text-sm">
+                            <option value="A">A - Excellent (10-11%)</option>
+                            <option value="B">B - Good (12-13%)</option>
+                            <option value="C">C - Fair (14-15%)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="mb-1 block text-sm font-medium text-slate-700">Credit Limit (£)</label>
+                        <input type="number" @bind="_approveCreditLimit" step="1000" min="0"
+                               class="w-full rounded-lg border border-slate-300 px-4 py-2.5 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                               placeholder="e.g. 50000" />
+                    </div>
+                }
+                else
+                {
+                    <div>
+                        <label class="mb-1 block text-sm font-medium text-slate-700">Capital Limit (£)</label>
+                        <input type="number" @bind="_approveCapitalLimit" step="1000" min="0"
+                               class="w-full rounded-lg border border-slate-300 px-4 py-2.5 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                               placeholder="e.g. 500000" />
+                    </div>
+                }
+                <div>
+                    <label class="mb-1 block text-sm font-medium text-slate-700">Reason / Notes</label>
+                    <textarea @bind="_approveReason" rows="2"
+                              class="w-full rounded-lg border border-slate-300 px-4 py-2.5 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                              placeholder="Approval notes..."></textarea>
+                </div>
+                <div class="flex justify-end gap-3">
+                    <button class="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+                            @onclick="CloseApproveModal">
+                        Cancel
+                    </button>
+                    <button class="rounded-lg bg-green-600 px-4 py-2 text-sm font-semibold text-white hover:bg-green-700"
+                            disabled="@_isSubmitting"
+                            @onclick="SubmitApprovalAsync">
+                        @(_isSubmitting ? "Processing..." : "Approve")
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+<!-- Reject Modal -->
+@if (_showRejectModal && _rejectItem is not null)
+{
+    <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/50" @onclick="CloseRejectModal">
+        <div class="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl" @onclick:stopPropagation="true">
+            <h3 class="mb-4 text-lg font-semibold text-slate-900">Reject Registration</h3>
+            <p class="mb-4 text-sm text-slate-600">
+                Rejecting <strong>@_rejectItem.FullName</strong>
+            </p>
+            <div class="space-y-4">
+                <div>
+                    <label class="mb-1 block text-sm font-medium text-slate-700">Reason</label>
+                    <textarea @bind="_rejectReason" rows="3"
+                              class="w-full rounded-lg border border-slate-300 px-4 py-2.5 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                              placeholder="Provide a reason for rejection..."></textarea>
+                </div>
+                <div class="flex justify-end gap-3">
+                    <button class="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+                            @onclick="CloseRejectModal">
+                        Cancel
+                    </button>
+                    <button class="rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700"
+                            disabled="@_isSubmitting"
+                            @onclick="SubmitRejectionAsync">
+                        @(_isSubmitting ? "Processing..." : "Reject")
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+<!-- Request Documents Modal -->
+@if (_showRequestDocsModal && _requestDocsItem is not null)
+{
+    <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/50" @onclick="CloseRequestDocsModal">
+        <div class="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl" @onclick:stopPropagation="true">
+            <h3 class="mb-4 text-lg font-semibold text-slate-900">Request Documents</h3>
+            <p class="mb-4 text-sm text-slate-600">
+                Requesting documents from <strong>@_requestDocsItem.FullName</strong>
+            </p>
+            <div class="space-y-4">
+                <div>
+                    <label class="mb-1 block text-sm font-medium text-slate-700">Required Documents</label>
+                    <p class="mb-2 text-xs text-slate-500">Enter each document on a new line.</p>
+                    <textarea @bind="_requiredDocuments" rows="4"
+                              class="w-full rounded-lg border border-slate-300 px-4 py-2.5 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                              placeholder="Proof of Identity&#10;Proof of Address&#10;Bank Statement"></textarea>
+                </div>
+                <div class="flex justify-end gap-3">
+                    <button class="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+                            @onclick="CloseRequestDocsModal">
+                        Cancel
+                    </button>
+                    <button class="rounded-lg bg-amber-600 px-4 py-2 text-sm font-semibold text-white hover:bg-amber-700"
+                            disabled="@_isSubmitting"
+                            @onclick="SubmitRequestDocsAsync">
+                        @(_isSubmitting ? "Processing..." : "Send Request")
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private List<VettingItemDto> _items = [];
+    private bool _isLoading = true;
+    private bool _isSubmitting;
+    private string? _errorMessage;
+    private string? _successMessage;
+    private int _currentPage = 1;
+    private int _pageSize = 20;
+    private int _totalCount;
+    private int _totalPages;
+
+    // Approve modal
+    private bool _showApproveModal;
+    private VettingItemDto? _approveItem;
+    private string _approveCreditTier = "B";
+    private decimal? _approveCreditLimit;
+    private decimal? _approveCapitalLimit;
+    private string _approveReason = string.Empty;
+
+    // Reject modal
+    private bool _showRejectModal;
+    private VettingItemDto? _rejectItem;
+    private string _rejectReason = string.Empty;
+
+    // Request docs modal
+    private bool _showRequestDocsModal;
+    private VettingItemDto? _requestDocsItem;
+    private string _requiredDocuments = string.Empty;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadQueueAsync();
+    }
+
+    private async Task LoadQueueAsync()
+    {
+        _isLoading = true;
+        _errorMessage = null;
+
+        try
+        {
+            var url = $"api/vetting/queue?page={_currentPage}&pageSize={_pageSize}";
+            var response = await Http.GetFromJsonAsync<ApiResponse<PagedResult<VettingItemDto>>>(url);
+
+            if (response is null)
+            {
+                _errorMessage = "No response received from the API.";
+                return;
+            }
+
+            if (!response.Success)
+            {
+                _errorMessage = response.Errors.Count > 0
+                    ? string.Join(", ", response.Errors)
+                    : "Failed to load vetting queue.";
+                return;
+            }
+
+            var pagedResult = response.Data;
+            _items = pagedResult?.Items.ToList() ?? [];
+            _totalCount = pagedResult?.TotalCount ?? 0;
+            _totalPages = pagedResult?.TotalPages ?? 0;
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = $"Unable to load vetting queue. {ex.Message}";
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private async Task PreviousPage()
+    {
+        if (_currentPage > 1)
+        {
+            _currentPage--;
+            await LoadQueueAsync();
+        }
+    }
+
+    private async Task NextPage()
+    {
+        if (_currentPage < _totalPages)
+        {
+            _currentPage++;
+            await LoadQueueAsync();
+        }
+    }
+
+    // Approve
+    private void OpenApproveModal(VettingItemDto item)
+    {
+        _approveItem = item;
+        _approveCreditTier = "B";
+        _approveCreditLimit = null;
+        _approveCapitalLimit = null;
+        _approveReason = string.Empty;
+        _showApproveModal = true;
+    }
+
+    private void CloseApproveModal()
+    {
+        _showApproveModal = false;
+        _approveItem = null;
+    }
+
+    private async Task SubmitApprovalAsync()
+    {
+        if (_approveItem is null) return;
+
+        _isSubmitting = true;
+        _errorMessage = null;
+        _successMessage = null;
+
+        try
+        {
+            var body = new
+            {
+                Reason = _approveReason,
+                CreditTier = _approveItem.UserType == "Borrower" ? _approveCreditTier : (string?)null,
+                CreditLimit = _approveItem.UserType == "Borrower" ? _approveCreditLimit : null,
+                CapitalLimit = _approveItem.UserType == "Lender" ? _approveCapitalLimit : null
+            };
+
+            var response = await Http.PostAsJsonAsync($"api/vetting/{_approveItem.UserId}/approve", body);
+            var result = await response.Content.ReadFromJsonAsync<ApiResponse<string>>();
+
+            if (result?.Success == true)
+            {
+                _successMessage = $"Successfully approved {_approveItem.FullName}.";
+                CloseApproveModal();
+                await LoadQueueAsync();
+            }
+            else
+            {
+                _errorMessage = result?.Errors.Count > 0
+                    ? string.Join(", ", result.Errors)
+                    : "Failed to approve registration.";
+            }
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = $"Error approving registration. {ex.Message}";
+        }
+        finally
+        {
+            _isSubmitting = false;
+        }
+    }
+
+    // Reject
+    private void OpenRejectModal(VettingItemDto item)
+    {
+        _rejectItem = item;
+        _rejectReason = string.Empty;
+        _showRejectModal = true;
+    }
+
+    private void CloseRejectModal()
+    {
+        _showRejectModal = false;
+        _rejectItem = null;
+    }
+
+    private async Task SubmitRejectionAsync()
+    {
+        if (_rejectItem is null || string.IsNullOrWhiteSpace(_rejectReason)) return;
+
+        _isSubmitting = true;
+        _errorMessage = null;
+        _successMessage = null;
+
+        try
+        {
+            var body = new { Reason = _rejectReason };
+            var response = await Http.PostAsJsonAsync($"api/vetting/{_rejectItem.UserId}/reject", body);
+            var result = await response.Content.ReadFromJsonAsync<ApiResponse<string>>();
+
+            if (result?.Success == true)
+            {
+                _successMessage = $"Registration for {_rejectItem.FullName} has been rejected.";
+                CloseRejectModal();
+                await LoadQueueAsync();
+            }
+            else
+            {
+                _errorMessage = result?.Errors.Count > 0
+                    ? string.Join(", ", result.Errors)
+                    : "Failed to reject registration.";
+            }
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = $"Error rejecting registration. {ex.Message}";
+        }
+        finally
+        {
+            _isSubmitting = false;
+        }
+    }
+
+    // Request Documents
+    private void OpenRequestDocsModal(VettingItemDto item)
+    {
+        _requestDocsItem = item;
+        _requiredDocuments = string.Empty;
+        _showRequestDocsModal = true;
+    }
+
+    private void CloseRequestDocsModal()
+    {
+        _showRequestDocsModal = false;
+        _requestDocsItem = null;
+    }
+
+    private async Task SubmitRequestDocsAsync()
+    {
+        if (_requestDocsItem is null || string.IsNullOrWhiteSpace(_requiredDocuments)) return;
+
+        _isSubmitting = true;
+        _errorMessage = null;
+        _successMessage = null;
+
+        try
+        {
+            var documents = _requiredDocuments
+                .Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                .ToList();
+
+            var body = new { RequiredDocuments = documents };
+            var response = await Http.PostAsJsonAsync($"api/vetting/{_requestDocsItem.UserId}/request-docs", body);
+            var result = await response.Content.ReadFromJsonAsync<ApiResponse<string>>();
+
+            if (result?.Success == true)
+            {
+                _successMessage = $"Document request sent to {_requestDocsItem.FullName}.";
+                CloseRequestDocsModal();
+                await LoadQueueAsync();
+            }
+            else
+            {
+                _errorMessage = result?.Errors.Count > 0
+                    ? string.Join(", ", result.Errors)
+                    : "Failed to request documents.";
+            }
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = $"Error requesting documents. {ex.Message}";
+        }
+        finally
+        {
+            _isSubmitting = false;
+        }
+    }
+}

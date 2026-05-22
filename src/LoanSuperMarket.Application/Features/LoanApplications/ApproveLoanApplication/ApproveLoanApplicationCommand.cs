@@ -2,4 +2,4 @@ using MediatR;
 
 namespace LoanSuperMarket.Application.Features.LoanApplications.ApproveLoanApplication;
 
-public sealed record ApproveLoanApplicationCommand(Guid Id) : IRequest;
+public sealed record ApproveLoanApplicationCommand(Guid Id, string Reason) : IRequest;

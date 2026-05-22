@@ -10,13 +10,16 @@ public sealed class RejectLoanApplicationCommandHandler
 {
     private readonly ILoanApplicationRepository _repository;
     private readonly IAuditLogRepository _auditLogRepository;
+    private readonly ICurrentUserService _currentUserService;
 
     public RejectLoanApplicationCommandHandler(
         ILoanApplicationRepository repository,
-        IAuditLogRepository auditLogRepository)
+        IAuditLogRepository auditLogRepository,
+        ICurrentUserService currentUserService)
     {
         _repository = repository;
         _auditLogRepository = auditLogRepository;
+        _currentUserService = currentUserService;
     }
 
     public async Task Handle(
@@ -32,14 +35,17 @@ public sealed class RejectLoanApplicationCommandHandler
             throw new DomainException("Loan application was not found.");
         }
 
-        application.Reject();
+        var userId = _currentUserService.UserId
+            ?? throw new DomainException("User is not authenticated.");
+
+        application.Reject(request.Reason, userId);
 
         await _auditLogRepository.AddAsync(
             AuditLog.Create(
                 "LoanApplication",
                 application.Id,
                 "Rejected",
-                "Loan application was rejected."),
+                $"Loan application was rejected. Reason: {request.Reason}"),
             cancellationToken);
 
         await _repository.SaveChangesAsync(cancellationToken);

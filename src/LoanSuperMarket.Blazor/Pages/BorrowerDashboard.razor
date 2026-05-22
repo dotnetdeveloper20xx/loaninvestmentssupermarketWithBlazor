@@ -1,0 +1,157 @@
+@page "/borrower/dashboard"
+@using LoanSuperMarket.Blazor.Services.ApiClients
+@using LoanSuperMarket.Shared.LoanApplications
+@using Microsoft.AspNetCore.Authorization
+@attribute [Authorize(Roles = "Borrower")]
+@inject WizardApiClient WizardApi
+@inject NavigationManager NavigationManager
+
+<div class="max-w-5xl mx-auto">
+    <div class="flex items-center justify-between mb-6">
+        <div>
+            <h1 class="text-2xl font-bold text-slate-900">My Applications</h1>
+            <p class="text-sm text-slate-500 mt-1">Track and manage your loan applications.</p>
+        </div>
+        <a href="/wizard"
+           class="rounded-lg bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-blue-700 transition">
+            + New Application
+        </a>
+    </div>
+
+    @if (_isLoading)
+    {
+        <div class="flex items-center justify-center py-16">
+            <div class="text-sm text-slate-500">Loading your applications...</div>
+        </div>
+    }
+    else if (!string.IsNullOrEmpty(_error))
+    {
+        <div class="rounded-lg bg-red-50 border border-red-200 p-4 text-sm text-red-700">
+            @_error
+        </div>
+    }
+    else if (_applications is null || _applications.Count == 0)
+    {
+        <div class="rounded-2xl bg-white border border-slate-200 p-12 text-center">
+            <div class="text-4xl mb-3">📋</div>
+            <h3 class="text-lg font-semibold text-slate-700">No applications yet</h3>
+            <p class="text-sm text-slate-500 mt-1">Start your first loan application to get matched with products.</p>
+            <a href="/wizard"
+               class="inline-block mt-4 rounded-lg bg-blue-600 px-6 py-2.5 text-sm font-semibold text-white hover:bg-blue-700 transition">
+                Apply for a Loan
+            </a>
+        </div>
+    }
+    else
+    {
+        <div class="grid gap-4">
+            @foreach (var app in _applications)
+            {
+                <div class="rounded-xl bg-white border border-slate-200 p-5 hover:shadow-sm transition">
+                    <div class="flex items-start justify-between">
+                        <div>
+                            <div class="flex items-center gap-2">
+                                <h3 class="text-sm font-semibold text-slate-800">
+                                    @(app.ProductTitle ?? "Draft Application")
+                                </h3>
+                                <span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium
+                                    @GetStatusBadgeClass(app.Status)">
+                                    @GetStatusLabel(app.Status)
+                                </span>
+                            </div>
+                            <div class="mt-1 flex gap-4 text-xs text-slate-500">
+                                <span>Amount: @app.RequestedAmount.ToString("N2")</span>
+                                <span>Term: @app.TermMonths months</span>
+                                @if (app.SubmittedAtUtc.HasValue)
+                                {
+                                    <span>Submitted: @app.SubmittedAtUtc.Value.ToString("MMM dd, yyyy")</span>
+                                }
+                            </div>
+                            <div class="mt-2 flex gap-3 text-xs text-slate-400">
+                                <span>📄 @app.UploadedDocuments uploaded</span>
+                                <span>✓ @app.VerifiedDocuments verified</span>
+                                @if (app.RejectedDocuments > 0)
+                                {
+                                    <span class="text-red-400">✗ @app.RejectedDocuments rejected</span>
+                                }
+                            </div>
+                        </div>
+                        <div>
+                            @if (app.Status == 0) // Draft
+                            {
+                                <a href="/wizard/@app.ApplicationId"
+                                   class="rounded-lg border border-blue-200 px-4 py-2 text-xs font-medium text-blue-600 hover:bg-blue-50 transition">
+                                    Continue
+                                </a>
+                            }
+                            else if (app.Status == 8) // DocumentsRequested
+                            {
+                                <a href="/wizard/@app.ApplicationId"
+                                   class="rounded-lg border border-amber-200 px-4 py-2 text-xs font-medium text-amber-600 hover:bg-amber-50 transition">
+                                    Upload Documents
+                                </a>
+                            }
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+</div>
+
+@code {
+    private IReadOnlyList<WizardApplicationSummaryDto>? _applications;
+    private bool _isLoading = true;
+    private string? _error;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            var result = await WizardApi.GetBorrowerApplicationsAsync();
+            if (result is not null && result.Success)
+            {
+                _applications = result.Data;
+            }
+            else
+            {
+                _error = result?.Errors.FirstOrDefault() ?? "Failed to load applications.";
+            }
+        }
+        catch (Exception ex)
+        {
+            _error = $"An error occurred: {ex.Message}";
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private static string GetStatusLabel(int status) => status switch
+    {
+        0 => "Draft",
+        1 => "Submitted",
+        2 => "Under Review",
+        3 => "Approved",
+        4 => "Rejected",
+        5 => "Funded",
+        6 => "Closed",
+        7 => "Withdrawn",
+        8 => "Documents Requested",
+        _ => "Unknown"
+    };
+
+    private static string GetStatusBadgeClass(int status) => status switch
+    {
+        0 => "bg-slate-100 text-slate-600",
+        1 => "bg-blue-100 text-blue-700",
+        2 => "bg-purple-100 text-purple-700",
+        3 => "bg-green-100 text-green-700",
+        4 => "bg-red-100 text-red-700",
+        5 => "bg-emerald-100 text-emerald-700",
+        7 => "bg-slate-100 text-slate-500",
+        8 => "bg-amber-100 text-amber-700",
+        _ => "bg-slate-100 text-slate-600"
+    };
+}

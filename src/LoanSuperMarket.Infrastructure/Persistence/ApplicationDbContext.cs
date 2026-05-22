@@ -19,6 +19,8 @@ public sealed class ApplicationDbContext : DbContext
 
     public DbSet<LoanApplication> LoanApplications => Set<LoanApplication>();
 
+    public DbSet<ApplicationDocument> ApplicationDocuments => Set<ApplicationDocument>();
+
     public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)

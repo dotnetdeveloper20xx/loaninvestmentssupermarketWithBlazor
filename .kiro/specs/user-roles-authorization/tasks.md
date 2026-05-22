@@ -343,7 +343,7 @@ This plan implements a comprehensive authentication and authorization system for
 - [x] 11. Checkpoint - Ensure API layer compiles and integration tests pass
   - Ensure all tests pass, ask the user if questions arise.
 
-- [ ] 12. Implement Blazor WebAssembly authentication integration
+- [x] 12. Implement Blazor WebAssembly authentication integration
   - [x] 12.1 Implement JwtAuthenticationStateProvider
     - Create `Services/Auth/JwtAuthenticationStateProvider.cs` extending `AuthenticationStateProvider`
     - Read JWT from localStorage, parse claims to build ClaimsPrincipal
@@ -378,27 +378,27 @@ This plan implements a comprehensive authentication and authorization system for
     - Hide workflow action buttons from users without corresponding policy
     - _Requirements: 11.1, 11.2, 11.3, 11.4, 12.1, 12.2, 12.3, 12.4, 12.5, 12.6, 12.7_
 
-  - [ ] 12.5 Implement session management page
+  - [x] 12.5 Implement session management page
     - Create `Pages/Account/Sessions.razor` displaying active sessions with device, IP, browser, last activity
     - Implement session revocation (single session and all sessions)
     - _Requirements: 24.3, 24.4_
 
-  - [ ] 12.6 Implement admin user management pages
+  - [x] 12.6 Implement admin user management pages
     - Create `Pages/Admin/UserManagement.razor` with user list, search, role filter, pagination
     - Create `Pages/Admin/VettingQueue.razor` with pending registrations, approve/reject/request-docs actions
     - Create `Pages/Admin/RoleManagement.razor` with custom role CRUD and permission assignment
     - Implement permission simulation tool UI
     - _Requirements: 14.1, 22.9, 23.3, 23.5_
 
-  - [ ]* 12.7 Write unit tests for Blazor authentication components
+  - [x]* 12.7 Write unit tests for Blazor authentication components
     - Test JwtAuthenticationStateProvider token parsing and state management
     - Test AuthTokenHandler 401 interception and retry logic
     - Test role-based navigation rendering for each role
     - Test protected route redirect behavior
     - _Requirements: 10.1, 10.2, 10.3, 11.1, 11.2, 13.1, 13.3_
 
-- [ ] 13. Implement audit logging for authentication events
-  - [ ] 13.1 Implement authentication audit logging
+- [x] 13. Implement audit logging for authentication events
+  - [x] 13.1 Implement authentication audit logging
     - Extend existing AuditLog infrastructure to record auth events
     - Log successful logins (EntityName: "ApplicationUser", Action: "Login", include email and IP)
     - Log failed login attempts (Action: "LoginFailed", include attempted email and IP)
@@ -411,7 +411,7 @@ This plan implements a comprehensive authentication and authorization system for
     - Log credit tier and limit changes
     - _Requirements: 15.1, 15.2, 15.3, 15.4, 15.5, 15.6, 18.7, 19.9, 20.9, 21.10, 22.7, 23.7_
 
-- [ ] 14. Final checkpoint - Ensure all tests pass and project builds successfully
+- [x] 14. Final checkpoint - Ensure all tests pass and project builds successfully
   - Ensure all tests pass, ask the user if questions arise.
 
 ## Notes

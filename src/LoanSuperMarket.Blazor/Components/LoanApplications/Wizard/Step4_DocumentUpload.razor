@@ -1,0 +1,206 @@
+@namespace LoanSuperMarket.Blazor.Components.LoanApplications.Wizard
+@using LoanSuperMarket.Blazor.Services
+@using LoanSuperMarket.Blazor.Services.ApiClients
+@using LoanSuperMarket.Shared.LoanApplications
+@using Microsoft.AspNetCore.Components.Forms
+@inject WizardStateService WizardState
+@inject WizardApiClient WizardApi
+
+<div class="space-y-6">
+    <h2 class="text-lg font-semibold text-slate-800">Upload Documents</h2>
+    <p class="text-sm text-slate-500">Upload the required documents to support your application.</p>
+
+    @* Required Documents *@
+    <div class="space-y-4">
+        <h3 class="text-sm font-medium text-slate-700">Required Documents</h3>
+
+        <DocumentUploadRow Label="National ID"
+                           DocumentType="1"
+                           UploadedDoc="@GetUploadedDocument(1)"
+                           OnUpload="HandleUpload"
+                           OnRemove="HandleRemove"
+                           IsUploading="@(_uploadingType == 1)" />
+
+        <DocumentUploadRow Label="Proof of Income"
+                           DocumentType="2"
+                           UploadedDoc="@GetUploadedDocument(2)"
+                           OnUpload="HandleUpload"
+                           OnRemove="HandleRemove"
+                           IsUploading="@(_uploadingType == 2)" />
+
+        <DocumentUploadRow Label="Bank Statement"
+                           DocumentType="3"
+                           UploadedDoc="@GetUploadedDocument(3)"
+                           OnUpload="HandleUpload"
+                           OnRemove="HandleRemove"
+                           IsUploading="@(_uploadingType == 3)" />
+    </div>
+
+    @* Optional Documents *@
+    <div class="space-y-4">
+        <h3 class="text-sm font-medium text-slate-700">Optional Documents</h3>
+
+        <DocumentUploadRow Label="Address Proof"
+                           DocumentType="4"
+                           UploadedDoc="@GetUploadedDocument(4)"
+                           OnUpload="HandleUpload"
+                           OnRemove="HandleRemove"
+                           IsUploading="@(_uploadingType == 4)" />
+
+        <DocumentUploadRow Label="Other"
+                           DocumentType="5"
+                           UploadedDoc="@GetUploadedDocument(5)"
+                           OnUpload="HandleUpload"
+                           OnRemove="HandleRemove"
+                           IsUploading="@(_uploadingType == 5)" />
+    </div>
+
+    @if (!string.IsNullOrEmpty(_validationError))
+    {
+        <div class="rounded-lg bg-red-50 border border-red-200 p-3 text-sm text-red-700">
+            @_validationError
+        </div>
+    }
+
+    @if (!string.IsNullOrEmpty(_serverError))
+    {
+        <div class="rounded-lg bg-red-50 border border-red-200 p-3 text-sm text-red-700">
+            @_serverError
+        </div>
+    }
+
+    <div class="flex justify-between pt-4">
+        <button @onclick="HandleBack"
+                class="rounded-lg border border-slate-300 px-6 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50 transition">
+            ← Back
+        </button>
+        <button @onclick="HandleNext"
+                class="rounded-lg bg-blue-600 px-6 py-2.5 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition">
+            Next →
+        </button>
+    </div>
+</div>
+
+@code {
+    [Parameter] public EventCallback OnNext { get; set; }
+    [Parameter] public EventCallback OnBack { get; set; }
+
+    private List<ApplicationDocumentDto> _documents = new();
+    private int? _uploadingType;
+    private string? _validationError;
+    private string? _serverError;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadDocumentsAsync();
+    }
+
+    private async Task LoadDocumentsAsync()
+    {
+        if (!WizardState.ApplicationId.HasValue)
+            return;
+
+        try
+        {
+            var result = await WizardApi.GetDocumentsAsync(WizardState.ApplicationId.Value);
+            if (result is not null && result.Success && result.Data is not null)
+            {
+                _documents = result.Data.ToList();
+            }
+        }
+        catch
+        {
+            // Silently handle — documents list will be empty
+        }
+    }
+
+    private ApplicationDocumentDto? GetUploadedDocument(int type)
+    {
+        return _documents.FirstOrDefault(d => d.Type == type);
+    }
+
+    private async Task HandleUpload((int DocumentType, IBrowserFile File) args)
+    {
+        if (!WizardState.ApplicationId.HasValue)
+            return;
+
+        _uploadingType = args.DocumentType;
+        _serverError = null;
+        StateHasChanged();
+
+        try
+        {
+            using var stream = args.File.OpenReadStream(maxAllowedSize: 10 * 1024 * 1024);
+            var result = await WizardApi.UploadDocumentAsync(
+                WizardState.ApplicationId.Value,
+                stream,
+                args.File.Name,
+                args.DocumentType);
+
+            if (result is not null && result.Success)
+            {
+                await LoadDocumentsAsync();
+            }
+            else
+            {
+                _serverError = result?.Errors.FirstOrDefault() ?? "Failed to upload document.";
+            }
+        }
+        catch (Exception ex)
+        {
+            _serverError = $"Upload failed: {ex.Message}";
+        }
+        finally
+        {
+            _uploadingType = null;
+        }
+    }
+
+    private async Task HandleRemove(Guid documentId)
+    {
+        if (!WizardState.ApplicationId.HasValue)
+            return;
+
+        _serverError = null;
+
+        try
+        {
+            var result = await WizardApi.RemoveDocumentAsync(WizardState.ApplicationId.Value, documentId);
+            if (result is not null && result.Success)
+            {
+                await LoadDocumentsAsync();
+            }
+            else
+            {
+                _serverError = result?.Errors.FirstOrDefault() ?? "Failed to remove document.";
+            }
+        }
+        catch (Exception ex)
+        {
+            _serverError = $"Remove failed: {ex.Message}";
+        }
+    }
+
+    private async Task HandleNext()
+    {
+        _validationError = null;
+
+        var missing = new List<string>();
+        if (!_documents.Any(d => d.Type == 1)) missing.Add("National ID");
+        if (!_documents.Any(d => d.Type == 2)) missing.Add("Proof of Income");
+        if (!_documents.Any(d => d.Type == 3)) missing.Add("Bank Statement");
+
+        if (missing.Count > 0)
+        {
+            _validationError = $"Please upload the following required documents: {string.Join(", ", missing)}";
+            return;
+        }
+
+        await OnNext.InvokeAsync();
+    }
+
+    private async Task HandleBack()
+    {
+        await OnBack.InvokeAsync();
+    }
+}

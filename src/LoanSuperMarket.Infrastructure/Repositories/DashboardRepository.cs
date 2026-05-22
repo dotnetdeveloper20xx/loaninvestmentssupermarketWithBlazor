@@ -59,7 +59,7 @@ public sealed class DashboardRepository : IDashboardRepository
                 Purpose = x.Purpose,
                 Amount = x.RequestedAmount.Amount,
                 Status = x.Status.ToString(),
-                SubmittedAtUtc = x.SubmittedAtUtc
+                SubmittedAtUtc = x.SubmittedAtUtc ?? DateTime.MinValue
             })
             .ToListAsync(cancellationToken);
 

@@ -1,0 +1,182 @@
+@namespace LoanSuperMarket.Blazor.Components.LoanApplications.Wizard
+@using LoanSuperMarket.Blazor.Services
+@using LoanSuperMarket.Blazor.Services.ApiClients
+@using LoanSuperMarket.Shared.LoanApplications
+@inject WizardStateService WizardState
+@inject WizardApiClient WizardApi
+
+<div class="space-y-6">
+    <h2 class="text-lg font-semibold text-slate-800">Loan Parameters</h2>
+    <p class="text-sm text-slate-500">Specify the details of the loan you are applying for.</p>
+
+    <div class="space-y-4">
+        <div>
+            <label class="block text-sm font-medium text-slate-700 mb-1">Purpose</label>
+            <textarea @bind="Purpose" @bind:event="oninput"
+                      rows="4"
+                      maxlength="1000"
+                      placeholder="Describe the purpose of this loan..."
+                      class="w-full rounded-lg border border-slate-300 px-4 py-2.5 text-sm text-slate-800 placeholder-slate-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none transition"></textarea>
+            <div class="flex justify-between mt-1">
+                @if (!string.IsNullOrEmpty(_purposeError))
+                {
+                    <span class="text-xs text-red-500">@_purposeError</span>
+                }
+                else
+                {
+                    <span></span>
+                }
+                <span class="text-xs text-slate-400">@Purpose.Length / 1000</span>
+            </div>
+        </div>
+
+        <div>
+            <label class="block text-sm font-medium text-slate-700 mb-1">Requested Amount</label>
+            <input type="number" @bind="RequestedAmount" step="0.01" min="0.01"
+                   placeholder="e.g. 50000"
+                   class="w-full rounded-lg border border-slate-300 px-4 py-2.5 text-sm text-slate-800 placeholder-slate-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none transition" />
+            @if (!string.IsNullOrEmpty(_amountError))
+            {
+                <span class="text-xs text-red-500 mt-1 block">@_amountError</span>
+            }
+        </div>
+
+        <div>
+            <label class="block text-sm font-medium text-slate-700 mb-1">Term (Months)</label>
+            <input type="number" @bind="TermMonths" min="1"
+                   placeholder="e.g. 24"
+                   class="w-full rounded-lg border border-slate-300 px-4 py-2.5 text-sm text-slate-800 placeholder-slate-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none transition" />
+            @if (!string.IsNullOrEmpty(_termError))
+            {
+                <span class="text-xs text-red-500 mt-1 block">@_termError</span>
+            }
+        </div>
+    </div>
+
+    @if (!string.IsNullOrEmpty(_serverError))
+    {
+        <div class="rounded-lg bg-red-50 border border-red-200 p-3 text-sm text-red-700">
+            @_serverError
+        </div>
+    }
+
+    <div class="flex justify-end pt-4">
+        <button @onclick="HandleNextAsync"
+                disabled="@_isLoading"
+                class="rounded-lg bg-blue-600 px-6 py-2.5 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition">
+            @if (_isLoading)
+            {
+                <span>Saving...</span>
+            }
+            else
+            {
+                <span>Next →</span>
+            }
+        </button>
+    </div>
+</div>
+
+@code {
+    [Parameter] public EventCallback OnNext { get; set; }
+
+    private string Purpose { get; set; } = string.Empty;
+    private decimal RequestedAmount { get; set; }
+    private int TermMonths { get; set; }
+
+    private string? _purposeError;
+    private string? _amountError;
+    private string? _termError;
+    private string? _serverError;
+    private bool _isLoading;
+
+    private bool Validate()
+    {
+        _purposeError = null;
+        _amountError = null;
+        _termError = null;
+
+        var isValid = true;
+
+        if (string.IsNullOrWhiteSpace(Purpose))
+        {
+            _purposeError = "Purpose is required.";
+            isValid = false;
+        }
+        else if (Purpose.Length > 1000)
+        {
+            _purposeError = "Purpose cannot exceed 1000 characters.";
+            isValid = false;
+        }
+
+        if (RequestedAmount <= 0)
+        {
+            _amountError = "Requested amount must be greater than zero.";
+            isValid = false;
+        }
+
+        if (TermMonths <= 0)
+        {
+            _termError = "Term must be greater than zero.";
+            isValid = false;
+        }
+
+        return isValid;
+    }
+
+    private async Task HandleNextAsync()
+    {
+        if (!Validate())
+            return;
+
+        _isLoading = true;
+        _serverError = null;
+
+        try
+        {
+            if (WizardState.ApplicationId.HasValue)
+            {
+                var updateRequest = new UpdateDraftParametersRequest
+                {
+                    RequestedAmount = RequestedAmount,
+                    TermMonths = TermMonths,
+                    Purpose = Purpose
+                };
+
+                var result = await WizardApi.UpdateParametersAsync(WizardState.ApplicationId.Value, updateRequest);
+                if (result is not null && !result.Success)
+                {
+                    _serverError = result.Errors.FirstOrDefault() ?? "Failed to update parameters.";
+                    return;
+                }
+            }
+            else
+            {
+                var createRequest = new CreateDraftRequest
+                {
+                    RequestedAmount = RequestedAmount,
+                    TermMonths = TermMonths,
+                    Purpose = Purpose
+                };
+
+                var result = await WizardApi.CreateDraftAsync(createRequest);
+                if (result is null || !result.Success)
+                {
+                    _serverError = result?.Errors.FirstOrDefault() ?? "Failed to create draft.";
+                    return;
+                }
+
+                WizardState.SetApplicationId(result.Data);
+            }
+
+            await OnNext.InvokeAsync();
+        }
+        catch (Exception ex)
+        {
+            _serverError = $"An error occurred: {ex.Message}";
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+}

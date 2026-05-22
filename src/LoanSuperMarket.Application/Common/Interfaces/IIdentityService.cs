@@ -129,4 +129,18 @@ public interface IIdentityService
     Task<IReadOnlyList<ApplicationUser>> GetUsersInRoleAsync(
         string roleName,
         CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Checks whether the specified user is currently locked out.
+    /// </summary>
+    Task<bool> IsLockedOutAsync(
+        string email,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Gets the lockout end date for the specified user, or null if not locked out.
+    /// </summary>
+    Task<DateTimeOffset?> GetLockoutEndDateAsync(
+        string email,
+        CancellationToken cancellationToken = default);
 }

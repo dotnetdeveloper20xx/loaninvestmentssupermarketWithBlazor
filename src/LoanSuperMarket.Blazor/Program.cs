@@ -1,4 +1,5 @@
 using LoanSuperMarket.Blazor;
+using LoanSuperMarket.Blazor.Services;
 using LoanSuperMarket.Blazor.Services.ApiClients;
 using LoanSuperMarket.Blazor.Services.Auth;
 using LoanSuperMarket.Blazor.Services.Drawers;
@@ -46,9 +47,12 @@ builder.Services.AddScoped<LoanProductsApiClient>();
 builder.Services.AddScoped<BorrowersApiClient>();
 builder.Services.AddScoped<LendersApiClient>();
 builder.Services.AddScoped<LoanApplicationsApiClient>();
+builder.Services.AddScoped<WizardApiClient>();
+builder.Services.AddScoped<ReviewQueueApiClient>();
 builder.Services.AddScoped<DashboardApiClient>();
 builder.Services.AddScoped<ToastService>();
 builder.Services.AddScoped<ModalService>();
 builder.Services.AddScoped<DrawerService>();
+builder.Services.AddScoped<WizardStateService>();
 
 await builder.Build().RunAsync();

@@ -1,0 +1,467 @@
+@page "/review-queue/{ApplicationId:guid}"
+@using LoanSuperMarket.Blazor.Services.ApiClients
+@using LoanSuperMarket.Shared.LoanApplications
+@using Microsoft.AspNetCore.Authorization
+@attribute [Authorize(Roles = "Admin,CrmManager")]
+@inject ReviewQueueApiClient ReviewQueueApi
+@inject NavigationManager NavigationManager
+
+<div class="max-w-5xl mx-auto">
+    <div class="mb-6">
+        <a href="/review-queue" class="text-sm text-blue-600 hover:text-blue-700 font-medium">← Back to Queue</a>
+    </div>
+
+    @if (_isLoading)
+    {
+        <div class="flex items-center justify-center py-16">
+            <div class="text-sm text-slate-500">Loading application details...</div>
+        </div>
+    }
+    else if (!string.IsNullOrEmpty(_error))
+    {
+        <div class="rounded-lg bg-red-50 border border-red-200 p-4 text-sm text-red-700">
+            @_error
+        </div>
+    }
+    else if (_detail is not null)
+    {
+        <div class="space-y-6">
+            @* Header *@
+            <div class="flex items-start justify-between">
+                <div>
+                    <h1 class="text-2xl font-bold text-slate-900">Application Review</h1>
+                    <p class="text-sm text-slate-500 mt-1">@_detail.BorrowerName • @_detail.BorrowerEmail</p>
+                </div>
+                <span class="inline-flex items-center rounded-full px-3 py-1 text-sm font-medium @GetStatusBadgeClass(_detail.Status)">
+                    @GetStatusLabel(_detail.Status)
+                </span>
+            </div>
+
+            @* Application Details *@
+            <div class="rounded-xl bg-white border border-slate-200 p-6">
+                <h2 class="text-sm font-semibold uppercase tracking-wider text-slate-400 mb-4">Loan Details</h2>
+                <dl class="grid grid-cols-2 lg:grid-cols-3 gap-4 text-sm">
+                    <div>
+                        <dt class="text-slate-500">Purpose</dt>
+                        <dd class="font-medium text-slate-800 mt-0.5">@_detail.Purpose</dd>
+                    </div>
+                    <div>
+                        <dt class="text-slate-500">Requested Amount</dt>
+                        <dd class="font-medium text-slate-800 mt-0.5">@_detail.RequestedAmount.ToString("N2")</dd>
+                    </div>
+                    <div>
+                        <dt class="text-slate-500">Term</dt>
+                        <dd class="font-medium text-slate-800 mt-0.5">@_detail.TermMonths months</dd>
+                    </div>
+                    <div>
+                        <dt class="text-slate-500">Product</dt>
+                        <dd class="font-medium text-slate-800 mt-0.5">@(_detail.ProductTitle ?? "—")</dd>
+                    </div>
+                    <div>
+                        <dt class="text-slate-500">Credit Tier</dt>
+                        <dd class="font-medium text-slate-800 mt-0.5">Tier @GetCreditTierLabel(_detail.CreditTier)</dd>
+                    </div>
+                    @if (_detail.SubmittedAtUtc.HasValue)
+                    {
+                        <div>
+                            <dt class="text-slate-500">Submitted</dt>
+                            <dd class="font-medium text-slate-800 mt-0.5">@_detail.SubmittedAtUtc.Value.ToString("MMM dd, yyyy HH:mm")</dd>
+                        </div>
+                    }
+                </dl>
+
+                @if (!string.IsNullOrEmpty(_detail.DocumentRequestNote))
+                {
+                    <div class="mt-4 rounded-lg bg-amber-50 border border-amber-200 p-3">
+                        <p class="text-xs font-medium text-amber-700">Document Request Note:</p>
+                        <p class="text-sm text-amber-800 mt-1">@_detail.DocumentRequestNote</p>
+                    </div>
+                }
+            </div>
+
+            @* Documents *@
+            <div class="rounded-xl bg-white border border-slate-200 p-6">
+                <h2 class="text-sm font-semibold uppercase tracking-wider text-slate-400 mb-4">Documents</h2>
+                @if (_detail.Documents.Count == 0)
+                {
+                    <p class="text-sm text-slate-400">No documents uploaded.</p>
+                }
+                else
+                {
+                    <div class="space-y-3">
+                        @foreach (var doc in _detail.Documents)
+                        {
+                            <div class="flex items-center justify-between rounded-lg border border-slate-200 p-4">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-8 h-8 rounded-full flex items-center justify-center text-sm
+                                        @(doc.Status == 2 ? "bg-green-100" : doc.Status == 3 ? "bg-red-100" : "bg-slate-100")">
+                                        @(doc.Status == 2 ? "✓" : doc.Status == 3 ? "✗" : "⏳")
+                                    </div>
+                                    <div>
+                                        <div class="text-sm font-medium text-slate-700">@doc.FileName</div>
+                                        <div class="text-xs text-slate-400">@GetDocumentTypeName(doc.Type) • @doc.UploadedAtUtc.ToString("MMM dd, yyyy")</div>
+                                        @if (!string.IsNullOrEmpty(doc.RejectionNote))
+                                        {
+                                            <div class="text-xs text-red-500 mt-0.5">Rejected: @doc.RejectionNote</div>
+                                        }
+                                    </div>
+                                </div>
+                                @if (doc.Status == 1) @* Pending *@
+                                {
+                                    <div class="flex items-center gap-2">
+                                        <button @onclick="() => VerifyDocumentAsync(doc.Id)"
+                                                class="rounded-md bg-green-50 border border-green-200 px-3 py-1.5 text-xs font-medium text-green-700 hover:bg-green-100 transition">
+                                            Verify
+                                        </button>
+                                        <button @onclick="() => ShowRejectDocumentModal(doc.Id)"
+                                                class="rounded-md bg-red-50 border border-red-200 px-3 py-1.5 text-xs font-medium text-red-700 hover:bg-red-100 transition">
+                                            Reject
+                                        </button>
+                                    </div>
+                                }
+                                else
+                                {
+                                    <span class="text-xs font-medium @(doc.Status == 2 ? "text-green-600" : "text-red-600")">
+                                        @(doc.Status == 2 ? "Verified" : "Rejected")
+                                    </span>
+                                }
+                            </div>
+                        }
+                    </div>
+                }
+            </div>
+
+            @* Action Buttons *@
+            <div class="rounded-xl bg-white border border-slate-200 p-6">
+                <h2 class="text-sm font-semibold uppercase tracking-wider text-slate-400 mb-4">Actions</h2>
+                <div class="flex flex-wrap gap-3">
+                    @if (_detail.Status == 1) @* Submitted *@
+                    {
+                        <button @onclick="MarkUnderReviewAsync"
+                                class="rounded-lg bg-purple-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-purple-700 transition">
+                            Mark Under Review
+                        </button>
+                    }
+                    @if (_detail.Status == 2) @* Under Review *@
+                    {
+                        <button @onclick="() => ShowApproveModal()"
+                                class="rounded-lg bg-green-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-green-700 transition">
+                            Approve
+                        </button>
+                        <button @onclick="() => ShowRejectModal()"
+                                class="rounded-lg bg-red-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-red-700 transition">
+                            Reject
+                        </button>
+                        <button @onclick="() => ShowRequestDocsModal()"
+                                class="rounded-lg bg-amber-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-amber-700 transition">
+                            Request Documents
+                        </button>
+                    }
+                </div>
+            </div>
+
+            @* Modal *@
+            @if (_showModal)
+            {
+                <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+                    <div class="bg-white rounded-2xl shadow-xl w-full max-w-md p-6">
+                        <h3 class="text-lg font-semibold text-slate-800 mb-4">@_modalTitle</h3>
+                        <textarea @bind="_modalInput"
+                                  rows="4"
+                                  placeholder="@_modalPlaceholder"
+                                  class="w-full rounded-lg border border-slate-300 px-4 py-2.5 text-sm text-slate-800 placeholder-slate-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none"></textarea>
+                        @if (!string.IsNullOrEmpty(_modalError))
+                        {
+                            <p class="text-xs text-red-500 mt-1">@_modalError</p>
+                        }
+                        <div class="flex justify-end gap-3 mt-4">
+                            <button @onclick="CloseModal"
+                                    class="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 transition">
+                                Cancel
+                            </button>
+                            <button @onclick="ConfirmModalAsync"
+                                    disabled="@_isProcessing"
+                                    class="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-50 transition">
+                                @(_isProcessing ? "Processing..." : "Confirm")
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            }
+
+            @if (!string.IsNullOrEmpty(_actionMessage))
+            {
+                <div class="rounded-lg bg-green-50 border border-green-200 p-3 text-sm text-green-700">
+                    @_actionMessage
+                </div>
+            }
+
+            @if (!string.IsNullOrEmpty(_actionError))
+            {
+                <div class="rounded-lg bg-red-50 border border-red-200 p-3 text-sm text-red-700">
+                    @_actionError
+                </div>
+            }
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter] public Guid ApplicationId { get; set; }
+
+    private ApplicationDetailDto? _detail;
+    private bool _isLoading = true;
+    private bool _isProcessing;
+    private string? _error;
+    private string? _actionMessage;
+    private string? _actionError;
+
+    // Modal state
+    private bool _showModal;
+    private string _modalTitle = string.Empty;
+    private string _modalPlaceholder = string.Empty;
+    private string _modalInput = string.Empty;
+    private string? _modalError;
+    private ModalAction _currentModalAction;
+    private Guid? _targetDocumentId;
+
+    private enum ModalAction { Approve, Reject, RequestDocs, RejectDocument }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadDetailsAsync();
+    }
+
+    private async Task LoadDetailsAsync()
+    {
+        try
+        {
+            var result = await ReviewQueueApi.GetDetailsAsync(ApplicationId);
+            if (result is not null && result.Success)
+            {
+                _detail = result.Data;
+            }
+            else
+            {
+                _error = result?.Errors.FirstOrDefault() ?? "Failed to load application details.";
+            }
+        }
+        catch (Exception ex)
+        {
+            _error = $"An error occurred: {ex.Message}";
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private async Task MarkUnderReviewAsync()
+    {
+        _actionError = null;
+        _actionMessage = null;
+
+        var result = await ReviewQueueApi.MarkUnderReviewAsync(ApplicationId);
+        if (result is not null && result.Success)
+        {
+            _actionMessage = "Application marked as Under Review.";
+            await LoadDetailsAsync();
+        }
+        else
+        {
+            _actionError = result?.Errors.FirstOrDefault() ?? "Failed to mark under review.";
+        }
+    }
+
+    private async Task VerifyDocumentAsync(Guid documentId)
+    {
+        _actionError = null;
+        _actionMessage = null;
+
+        var result = await ReviewQueueApi.VerifyDocumentAsync(ApplicationId, documentId);
+        if (result is not null && result.Success)
+        {
+            _actionMessage = "Document verified.";
+            await LoadDetailsAsync();
+        }
+        else
+        {
+            _actionError = result?.Errors.FirstOrDefault() ?? "Failed to verify document.";
+        }
+    }
+
+    private void ShowApproveModal()
+    {
+        _currentModalAction = ModalAction.Approve;
+        _modalTitle = "Approve Application";
+        _modalPlaceholder = "Enter approval reason...";
+        _modalInput = string.Empty;
+        _modalError = null;
+        _showModal = true;
+    }
+
+    private void ShowRejectModal()
+    {
+        _currentModalAction = ModalAction.Reject;
+        _modalTitle = "Reject Application";
+        _modalPlaceholder = "Enter rejection reason...";
+        _modalInput = string.Empty;
+        _modalError = null;
+        _showModal = true;
+    }
+
+    private void ShowRequestDocsModal()
+    {
+        _currentModalAction = ModalAction.RequestDocs;
+        _modalTitle = "Request Additional Documents";
+        _modalPlaceholder = "Describe what documents are needed...";
+        _modalInput = string.Empty;
+        _modalError = null;
+        _showModal = true;
+    }
+
+    private void ShowRejectDocumentModal(Guid documentId)
+    {
+        _currentModalAction = ModalAction.RejectDocument;
+        _targetDocumentId = documentId;
+        _modalTitle = "Reject Document";
+        _modalPlaceholder = "Enter rejection note...";
+        _modalInput = string.Empty;
+        _modalError = null;
+        _showModal = true;
+    }
+
+    private void CloseModal()
+    {
+        _showModal = false;
+        _modalInput = string.Empty;
+        _modalError = null;
+    }
+
+    private async Task ConfirmModalAsync()
+    {
+        if (string.IsNullOrWhiteSpace(_modalInput))
+        {
+            _modalError = "This field is required.";
+            return;
+        }
+
+        _isProcessing = true;
+        _actionError = null;
+        _actionMessage = null;
+
+        try
+        {
+            var success = _currentModalAction switch
+            {
+                ModalAction.Approve => await ApproveAsync(),
+                ModalAction.Reject => await RejectAsync(),
+                ModalAction.RequestDocs => await RequestDocsAsync(),
+                ModalAction.RejectDocument => await RejectDocumentAsync(),
+                _ => false
+            };
+
+            if (success)
+            {
+                CloseModal();
+                await LoadDetailsAsync();
+            }
+        }
+        finally
+        {
+            _isProcessing = false;
+        }
+    }
+
+    private async Task<bool> ApproveAsync()
+    {
+        var result = await ReviewQueueApi.ApproveAsync(ApplicationId, _modalInput);
+        if (result is not null && result.Success)
+        {
+            _actionMessage = "Application approved.";
+            return true;
+        }
+        _modalError = result?.Errors.FirstOrDefault() ?? "Failed to approve.";
+        return false;
+    }
+
+    private async Task<bool> RejectAsync()
+    {
+        var result = await ReviewQueueApi.RejectAsync(ApplicationId, _modalInput);
+        if (result is not null && result.Success)
+        {
+            _actionMessage = "Application rejected.";
+            return true;
+        }
+        _modalError = result?.Errors.FirstOrDefault() ?? "Failed to reject.";
+        return false;
+    }
+
+    private async Task<bool> RequestDocsAsync()
+    {
+        var result = await ReviewQueueApi.RequestDocumentsAsync(ApplicationId, _modalInput);
+        if (result is not null && result.Success)
+        {
+            _actionMessage = "Additional documents requested.";
+            return true;
+        }
+        _modalError = result?.Errors.FirstOrDefault() ?? "Failed to request documents.";
+        return false;
+    }
+
+    private async Task<bool> RejectDocumentAsync()
+    {
+        if (!_targetDocumentId.HasValue) return false;
+
+        var result = await ReviewQueueApi.RejectDocumentAsync(ApplicationId, _targetDocumentId.Value, _modalInput);
+        if (result is not null && result.Success)
+        {
+            _actionMessage = "Document rejected.";
+            return true;
+        }
+        _modalError = result?.Errors.FirstOrDefault() ?? "Failed to reject document.";
+        return false;
+    }
+
+    private static string GetStatusLabel(int status) => status switch
+    {
+        0 => "Draft",
+        1 => "Submitted",
+        2 => "Under Review",
+        3 => "Approved",
+        4 => "Rejected",
+        5 => "Funded",
+        6 => "Closed",
+        7 => "Withdrawn",
+        8 => "Documents Requested",
+        _ => "Unknown"
+    };
+
+    private static string GetStatusBadgeClass(int status) => status switch
+    {
+        1 => "bg-blue-100 text-blue-700",
+        2 => "bg-purple-100 text-purple-700",
+        3 => "bg-green-100 text-green-700",
+        4 => "bg-red-100 text-red-700",
+        8 => "bg-amber-100 text-amber-700",
+        _ => "bg-slate-100 text-slate-600"
+    };
+
+    private static string GetDocumentTypeName(int type) => type switch
+    {
+        1 => "National ID",
+        2 => "Proof of Income",
+        3 => "Bank Statement",
+        4 => "Address Proof",
+        5 => "Other",
+        _ => "Document"
+    };
+
+    private static string GetCreditTierLabel(int tier) => tier switch
+    {
+        1 => "A",
+        2 => "B",
+        3 => "C",
+        _ => "Unknown"
+    };
+}
