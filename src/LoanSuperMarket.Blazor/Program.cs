@@ -50,6 +50,8 @@ builder.Services.AddScoped<LoanApplicationsApiClient>();
 builder.Services.AddScoped<WizardApiClient>();
 builder.Services.AddScoped<ReviewQueueApiClient>();
 builder.Services.AddScoped<DashboardApiClient>();
+builder.Services.AddScoped<FundingApiClient>();
+builder.Services.AddScoped<PaymentsApiClient>();
 builder.Services.AddScoped<ToastService>();
 builder.Services.AddScoped<ModalService>();
 builder.Services.AddScoped<DrawerService>();

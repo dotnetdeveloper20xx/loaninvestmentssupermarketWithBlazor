@@ -1,0 +1,43 @@
+@page "/lender-dashboard"
+
+<PageHeader Title="Lender Dashboard"
+            Subtitle="Monitor your lending portfolio, funded loans, and earnings.">
+</PageHeader>
+
+<div class="mb-6">
+    <div class="flex gap-2 border-b border-slate-200 mb-6">
+        <button class="px-4 py-2 text-sm font-semibold @(_activeTab == "portfolio" ? "text-blue-600 border-b-2 border-blue-600" : "text-slate-500 hover:text-slate-700")"
+                @onclick="SetTabPortfolio">
+            Portfolio
+        </button>
+        <button class="px-4 py-2 text-sm font-semibold @(_activeTab == "loans" ? "text-blue-600 border-b-2 border-blue-600" : "text-slate-500 hover:text-slate-700")"
+                @onclick="SetTabLoans">
+            Loans
+        </button>
+        <button class="px-4 py-2 text-sm font-semibold @(_activeTab == "earnings" ? "text-blue-600 border-b-2 border-blue-600" : "text-slate-500 hover:text-slate-700")"
+                @onclick="SetTabEarnings">
+            Earnings
+        </button>
+    </div>
+
+    @if (_activeTab == "portfolio")
+    {
+        <LenderPortfolio />
+    }
+    else if (_activeTab == "loans")
+    {
+        <LenderLoans />
+    }
+    else if (_activeTab == "earnings")
+    {
+        <LenderEarnings />
+    }
+</div>
+
+@code {
+    private string _activeTab = "portfolio";
+
+    private void SetTabPortfolio() => _activeTab = "portfolio";
+    private void SetTabLoans() => _activeTab = "loans";
+    private void SetTabEarnings() => _activeTab = "earnings";
+}

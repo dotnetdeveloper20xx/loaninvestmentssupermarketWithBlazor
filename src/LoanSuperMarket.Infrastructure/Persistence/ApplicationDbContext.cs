@@ -23,6 +23,10 @@ public sealed class ApplicationDbContext : DbContext
 
     public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
 
+    public DbSet<RepaymentSchedule> RepaymentSchedules => Set<RepaymentSchedule>();
+
+    public DbSet<Installment> Installments => Set<Installment>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(ApplicationDbContext).Assembly);

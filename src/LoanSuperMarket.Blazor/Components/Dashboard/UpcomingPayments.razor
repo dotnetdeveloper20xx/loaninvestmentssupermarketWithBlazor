@@ -1,0 +1,37 @@
+@inject DashboardApiClient DashboardApiClient
+
+@if (_summary is not null && _summary.UpcomingPayments.Count > 0)
+{
+    <div class="space-y-3">
+        @foreach (var payment in _summary.UpcomingPayments)
+        {
+            <div class="flex items-center justify-between rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+                <div>
+                    <div class="text-sm font-medium text-slate-900">@payment.ProductTitle</div>
+                    <div class="text-xs text-slate-500">Installment #@payment.InstallmentNumber</div>
+                </div>
+                <div class="text-right">
+                    <div class="text-sm font-bold text-slate-900">£@payment.Amount.ToString("N2")</div>
+                    <div class="text-xs text-slate-500">@payment.DueDate.ToString("dd MMM yyyy")</div>
+                </div>
+            </div>
+        }
+    </div>
+}
+else
+{
+    <div class="py-8 text-center text-slate-500">No upcoming payments in the next 3 months.</div>
+}
+
+@code {
+    private BorrowerPaymentSummaryDto? _summary;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var response = await DashboardApiClient.GetBorrowerPaymentSummaryAsync();
+        if (response?.Success == true)
+        {
+            _summary = response.Data;
+        }
+    }
+}

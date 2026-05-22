@@ -114,4 +114,20 @@ public sealed class Lender : AuditableEntity
         Status = LenderStatus.Archived;
         MarkUpdated();
     }
+
+    public void DeductFunds(decimal amount)
+    {
+        if (amount <= 0)
+        {
+            throw new DomainException("Deduction amount must be greater than zero.");
+        }
+
+        if (amount > AvailableFunds)
+        {
+            throw new DomainException("Insufficient funds. The deduction amount exceeds available funds.");
+        }
+
+        AvailableFunds -= amount;
+        MarkUpdated();
+    }
 }

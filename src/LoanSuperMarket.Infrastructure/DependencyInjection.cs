@@ -1,10 +1,14 @@
 using LoanSuperMarket.Application.Common.Interfaces;
+using LoanSuperMarket.Application.Features.Funding;
 using LoanSuperMarket.Application.Features.LoanApplications.ProductMatching;
+using LoanSuperMarket.Application.Features.Payments.LateDetection;
 using LoanSuperMarket.Domain.Entities.Identity;
+using LoanSuperMarket.Domain.Services;
 using LoanSuperMarket.Infrastructure.Identity;
 using LoanSuperMarket.Infrastructure.Persistence;
 using LoanSuperMarket.Infrastructure.Repositories;
 using LoanSuperMarket.Infrastructure.Services;
+using LoanSuperMarket.Shared.Configuration;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -77,6 +81,19 @@ public static class DependencyInjection
         services.AddScoped<IApplicationDocumentRepository, ApplicationDocumentRepository>();
         services.AddScoped<IDocumentStorageService, StubDocumentStorageService>();
         services.AddScoped<ProductMatchingService>();
+
+        // Funding & Repayment Engine services
+        services.AddScoped<IAmortizationService, AmortizationService>();
+        services.AddScoped<IPaymentProcessor, PaymentProcessor>();
+        services.AddScoped<INotificationService, StubNotificationService>();
+        services.AddScoped<LatePaymentService>();
+
+        // Bind RepaymentSettings from configuration
+        services.Configure<RepaymentSettings>(
+            configuration.GetSection("RepaymentSettings"));
+
+        // Register background service for late payment detection
+        services.AddHostedService<LatePaymentHostedService>();
 
         return services;
     }

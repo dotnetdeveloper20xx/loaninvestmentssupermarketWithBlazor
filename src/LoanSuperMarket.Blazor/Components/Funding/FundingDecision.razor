@@ -1,0 +1,245 @@
+@inject FundingApiClient FundingApiClient
+
+<div class="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+    <div class="w-full max-w-2xl rounded-2xl bg-white p-8 shadow-xl">
+        <div class="flex items-center justify-between mb-6">
+            <h2 class="text-xl font-bold text-slate-900">Funding Decision</h2>
+            <button class="text-slate-400 hover:text-slate-600" @onclick="OnClose">✕</button>
+        </div>
+
+        @if (_isLoading)
+        {
+            <div class="py-8 text-center text-slate-500">Loading application details...</div>
+        }
+        else if (_detail is not null)
+        {
+            <div class="space-y-4 mb-6">
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="rounded-xl border border-slate-200 p-4">
+                        <div class="text-xs font-semibold text-slate-500 uppercase">Borrower</div>
+                        <div class="mt-1 text-sm font-medium text-slate-900">@_detail.BorrowerName</div>
+                        <div class="text-xs text-slate-500">@_detail.BorrowerEmail</div>
+                    </div>
+                    <div class="rounded-xl border border-slate-200 p-4">
+                        <div class="text-xs font-semibold text-slate-500 uppercase">Credit Tier</div>
+                        <div class="mt-1">
+                            <span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-sm font-semibold
+                                @(_detail.CreditTier == "A" ? "bg-green-100 text-green-800" :
+                                  _detail.CreditTier == "B" ? "bg-blue-100 text-blue-800" :
+                                  "bg-amber-100 text-amber-800")">
+                                Tier @_detail.CreditTier
+                            </span>
+                        </div>
+                    </div>
+                    <div class="rounded-xl border border-slate-200 p-4">
+                        <div class="text-xs font-semibold text-slate-500 uppercase">Amount</div>
+                        <div class="mt-1 text-lg font-bold text-slate-900">£@_detail.Amount.ToString("N0")</div>
+                    </div>
+                    <div class="rounded-xl border border-slate-200 p-4">
+                        <div class="text-xs font-semibold text-slate-500 uppercase">Term</div>
+                        <div class="mt-1 text-sm font-medium text-slate-900">@_detail.TermMonths months</div>
+                    </div>
+                    <div class="rounded-xl border border-slate-200 p-4">
+                        <div class="text-xs font-semibold text-slate-500 uppercase">Product</div>
+                        <div class="mt-1 text-sm font-medium text-slate-900">@_detail.ProductTitle</div>
+                    </div>
+                    <div class="rounded-xl border border-slate-200 p-4">
+                        <div class="text-xs font-semibold text-slate-500 uppercase">Effective Rate</div>
+                        <div class="mt-1 text-sm font-medium text-slate-900">@_detail.EffectiveRate.ToString("N2")%</div>
+                        <div class="text-xs text-slate-500">Base: @_detail.BaseRate.ToString("N2")%</div>
+                    </div>
+                </div>
+
+                <div class="rounded-xl border border-slate-200 p-4">
+                    <div class="text-xs font-semibold text-slate-500 uppercase">Purpose</div>
+                    <div class="mt-1 text-sm text-slate-700">@_detail.Purpose</div>
+                </div>
+
+                @if (!string.IsNullOrWhiteSpace(_detail.ApprovalReason))
+                {
+                    <div class="rounded-xl border border-green-200 bg-green-50 p-4">
+                        <div class="text-xs font-semibold text-green-700 uppercase">Approval Reason</div>
+                        <div class="mt-1 text-sm text-green-800">@_detail.ApprovalReason</div>
+                    </div>
+                }
+            </div>
+
+            @if (_fundingResult is not null)
+            {
+                <div class="rounded-xl border border-green-200 bg-green-50 p-6 mb-4">
+                    <div class="text-lg font-bold text-green-800 mb-3">✓ Funding Successful</div>
+                    <div class="grid grid-cols-2 gap-3 text-sm">
+                        <div><span class="text-green-700 font-medium">Monthly EMI:</span> £@_fundingResult.MonthlyEmi.ToString("N2")</div>
+                        <div><span class="text-green-700 font-medium">Total Interest:</span> £@_fundingResult.TotalInterest.ToString("N2")</div>
+                        <div><span class="text-green-700 font-medium">Term:</span> @_fundingResult.TermMonths months</div>
+                        <div><span class="text-green-700 font-medium">Rate:</span> @_fundingResult.EffectiveRate.ToString("N2")%</div>
+                    </div>
+                </div>
+            }
+
+            @if (!string.IsNullOrWhiteSpace(_actionError))
+            {
+                <div class="mb-4 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+                    @_actionError
+                </div>
+            }
+
+            @if (_showDeclineInput)
+            {
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-slate-700 mb-1">Decline Reason</label>
+                    <textarea @bind="_declineReason" rows="3"
+                              class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                              placeholder="Enter reason for declining..."></textarea>
+                </div>
+            }
+
+            @if (_fundingResult is null)
+            {
+                <div class="flex justify-end gap-3">
+                    @if (_showDeclineInput)
+                    {
+                        <button class="rounded-xl border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+                                @onclick="CancelDecline">
+                            Cancel
+                        </button>
+                        <button class="rounded-xl bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700"
+                                @onclick="ConfirmDecline"
+                                disabled="@_isProcessing">
+                            Confirm Decline
+                        </button>
+                    }
+                    else
+                    {
+                        <button class="rounded-xl border border-red-300 px-4 py-2 text-sm font-semibold text-red-700 hover:bg-red-50"
+                                @onclick="ShowDeclineInput">
+                            Decline Funding
+                        </button>
+                        <button class="rounded-xl bg-green-600 px-4 py-2 text-sm font-semibold text-white hover:bg-green-700"
+                                @onclick="AcceptFunding"
+                                disabled="@_isProcessing">
+                            Accept Funding
+                        </button>
+                    }
+                </div>
+            }
+            else
+            {
+                <div class="flex justify-end">
+                    <button class="rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700"
+                            @onclick="() => OnFunded.InvokeAsync()">
+                        Done
+                    </button>
+                </div>
+            }
+        }
+    </div>
+</div>
+
+@code {
+    [Parameter] public Guid ApplicationId { get; set; }
+    [Parameter] public EventCallback OnClose { get; set; }
+    [Parameter] public EventCallback OnFunded { get; set; }
+    [Parameter] public EventCallback OnDeclined { get; set; }
+
+    private FundingApplicationDetailDto? _detail;
+    private FundingResultDto? _fundingResult;
+    private bool _isLoading = true;
+    private bool _isProcessing;
+    private bool _showDeclineInput;
+    private string? _declineReason;
+    private string? _actionError;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadDetailsAsync();
+    }
+
+    private async Task LoadDetailsAsync()
+    {
+        _isLoading = true;
+        try
+        {
+            var response = await FundingApiClient.GetApplicationDetailsAsync(ApplicationId);
+            if (response?.Success == true)
+            {
+                _detail = response.Data;
+            }
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private async Task AcceptFunding()
+    {
+        _isProcessing = true;
+        _actionError = null;
+
+        try
+        {
+            var response = await FundingApiClient.AcceptFundingAsync(ApplicationId);
+            if (response?.Success == true)
+            {
+                _fundingResult = response.Data;
+            }
+            else
+            {
+                _actionError = response?.Errors.FirstOrDefault() ?? "Failed to fund application.";
+            }
+        }
+        catch (Exception ex)
+        {
+            _actionError = ex.Message;
+        }
+        finally
+        {
+            _isProcessing = false;
+        }
+    }
+
+    private void ShowDeclineInput()
+    {
+        _showDeclineInput = true;
+    }
+
+    private void CancelDecline()
+    {
+        _showDeclineInput = false;
+        _declineReason = null;
+    }
+
+    private async Task ConfirmDecline()
+    {
+        if (string.IsNullOrWhiteSpace(_declineReason))
+        {
+            _actionError = "Please provide a reason for declining.";
+            return;
+        }
+
+        _isProcessing = true;
+        _actionError = null;
+
+        try
+        {
+            var response = await FundingApiClient.DeclineFundingAsync(ApplicationId, _declineReason);
+            if (response?.Success == true)
+            {
+                await OnDeclined.InvokeAsync();
+            }
+            else
+            {
+                _actionError = response?.Errors.FirstOrDefault() ?? "Failed to decline funding.";
+            }
+        }
+        catch (Exception ex)
+        {
+            _actionError = ex.Message;
+        }
+        finally
+        {
+            _isProcessing = false;
+        }
+    }
+}

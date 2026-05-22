@@ -1,0 +1,76 @@
+@inject DashboardApiClient DashboardApiClient
+@inject NavigationManager Navigation
+
+@if (_loans.Count == 0)
+{
+    <div class="py-8 text-center text-slate-500">No active loans found.</div>
+}
+else
+{
+    <div class="space-y-4">
+        @foreach (var loan in _loans)
+        {
+            <div class="rounded-2xl border p-5 shadow-sm
+                @(loan.HasLateOrMissed ? "border-red-200 bg-red-50" :
+                  loan.IsDueSoon ? "border-amber-200 bg-amber-50" :
+                  "border-slate-200 bg-white")">
+                <div class="flex items-center justify-between mb-3">
+                    <div>
+                        <div class="font-semibold text-slate-900">@loan.ProductTitle</div>
+                        <div class="text-sm text-slate-500">
+                            £@loan.FundedAmount.ToString("N0") · @loan.TermMonths months · @loan.EffectiveRate.ToString("N2")%
+                        </div>
+                    </div>
+                    <button class="text-xs text-blue-600 hover:underline"
+                            @onclick="() => NavigateToSchedule(loan.ScheduleId)">
+                        View Schedule
+                    </button>
+                </div>
+                <div class="flex items-center gap-4 text-sm">
+                    @if (loan.NextDueDate.HasValue)
+                    {
+                        <div>
+                            <span class="text-slate-500">Next:</span>
+                            <span class="font-medium">£@loan.NextAmount?.ToString("N2") on @loan.NextDueDate.Value.ToString("dd MMM")</span>
+                        </div>
+                    }
+                    <div class="flex-1">
+                        <div class="flex items-center justify-between text-xs text-slate-500 mb-1">
+                            <span>@loan.PaidCount / @loan.TotalCount paid</span>
+                            <span>@loan.ProgressPercentage.ToString("N0")%</span>
+                        </div>
+                        <div class="h-2 w-full rounded-full bg-slate-200">
+                            <div class="h-2 rounded-full bg-green-500" style="width: @loan.ProgressPercentage%"></div>
+                        </div>
+                    </div>
+                </div>
+                @if (loan.IsDueSoon)
+                {
+                    <div class="mt-2 text-xs font-medium text-amber-700">⚠️ Payment due soon</div>
+                }
+                @if (loan.HasLateOrMissed)
+                {
+                    <div class="mt-2 text-xs font-medium text-red-700">⚠️ Has late/missed payments</div>
+                }
+            </div>
+        }
+    </div>
+}
+
+@code {
+    private List<BorrowerLoanDto> _loans = [];
+
+    protected override async Task OnInitializedAsync()
+    {
+        var response = await DashboardApiClient.GetBorrowerLoansAsync();
+        if (response?.Success == true)
+        {
+            _loans = response.Data?.ToList() ?? [];
+        }
+    }
+
+    private void NavigateToSchedule(Guid scheduleId)
+    {
+        Navigation.NavigateTo($"/repayment-schedule/{scheduleId}");
+    }
+}

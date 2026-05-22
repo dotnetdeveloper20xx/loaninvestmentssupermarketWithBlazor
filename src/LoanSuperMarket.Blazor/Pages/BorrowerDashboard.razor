@@ -1,4 +1,5 @@
 @page "/borrower/dashboard"
+@page "/borrower-dashboard"
 @using LoanSuperMarket.Blazor.Services.ApiClients
 @using LoanSuperMarket.Shared.LoanApplications
 @using Microsoft.AspNetCore.Authorization
@@ -9,14 +10,48 @@
 <div class="max-w-5xl mx-auto">
     <div class="flex items-center justify-between mb-6">
         <div>
-            <h1 class="text-2xl font-bold text-slate-900">My Applications</h1>
-            <p class="text-sm text-slate-500 mt-1">Track and manage your loan applications.</p>
+            <h1 class="text-2xl font-bold text-slate-900">Borrower Dashboard</h1>
+            <p class="text-sm text-slate-500 mt-1">Track your applications, active loans, and payments.</p>
         </div>
         <a href="/wizard"
            class="rounded-lg bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-blue-700 transition">
             + New Application
         </a>
     </div>
+
+    <div class="flex gap-2 border-b border-slate-200 mb-6">
+        <button class="px-4 py-2 text-sm font-semibold @(_activeTab == "applications" ? "text-blue-600 border-b-2 border-blue-600" : "text-slate-500 hover:text-slate-700")"
+                @onclick="SetTabApplications">
+            Applications
+        </button>
+        <button class="px-4 py-2 text-sm font-semibold @(_activeTab == "loans" ? "text-blue-600 border-b-2 border-blue-600" : "text-slate-500 hover:text-slate-700")"
+                @onclick="SetTabLoans">
+            Active Loans
+        </button>
+        <button class="px-4 py-2 text-sm font-semibold @(_activeTab == "history" ? "text-blue-600 border-b-2 border-blue-600" : "text-slate-500 hover:text-slate-700")"
+                @onclick="SetTabHistory">
+            Payment History
+        </button>
+        <button class="px-4 py-2 text-sm font-semibold @(_activeTab == "upcoming" ? "text-blue-600 border-b-2 border-blue-600" : "text-slate-500 hover:text-slate-700")"
+                @onclick="SetTabUpcoming">
+            Upcoming Payments
+        </button>
+    </div>
+
+    @if (_activeTab == "loans")
+    {
+        <BorrowerLoans />
+    }
+    else if (_activeTab == "history")
+    {
+        <BorrowerPaymentHistory />
+    }
+    else if (_activeTab == "upcoming")
+    {
+        <UpcomingPayments />
+    }
+    else
+    {
 
     @if (_isLoading)
     {
@@ -97,12 +132,19 @@
             }
         </div>
     }
+    } @* end else for applications tab *@
 </div>
 
 @code {
     private IReadOnlyList<WizardApplicationSummaryDto>? _applications;
     private bool _isLoading = true;
     private string? _error;
+    private string _activeTab = "applications";
+
+    private void SetTabApplications() => _activeTab = "applications";
+    private void SetTabLoans() => _activeTab = "loans";
+    private void SetTabHistory() => _activeTab = "history";
+    private void SetTabUpcoming() => _activeTab = "upcoming";
 
     protected override async Task OnInitializedAsync()
     {

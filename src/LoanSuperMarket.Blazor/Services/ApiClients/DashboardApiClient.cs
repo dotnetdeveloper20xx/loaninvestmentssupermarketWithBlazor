@@ -20,4 +20,55 @@ public sealed class DashboardApiClient
             "api/dashboard/summary",
             cancellationToken);
     }
+
+    public async Task<ApiResponse<LenderPortfolioDto>?> GetLenderPortfolioAsync(
+        CancellationToken cancellationToken = default)
+    {
+        return await _httpClient.GetFromJsonAsync<ApiResponse<LenderPortfolioDto>>(
+            "api/dashboard/lender/portfolio",
+            cancellationToken);
+    }
+
+    public async Task<ApiResponse<IReadOnlyList<LenderLoanDto>>?> GetLenderLoansAsync(
+        string? performance = null,
+        string? sortBy = null,
+        CancellationToken cancellationToken = default)
+    {
+        var queryParams = new List<string>();
+        if (!string.IsNullOrWhiteSpace(performance))
+            queryParams.Add($"performance={Uri.EscapeDataString(performance)}");
+        if (!string.IsNullOrWhiteSpace(sortBy))
+            queryParams.Add($"sortBy={Uri.EscapeDataString(sortBy)}");
+
+        var url = "api/dashboard/lender/loans";
+        if (queryParams.Count > 0)
+            url += "?" + string.Join("&", queryParams);
+
+        return await _httpClient.GetFromJsonAsync<ApiResponse<IReadOnlyList<LenderLoanDto>>>(
+            url, cancellationToken);
+    }
+
+    public async Task<ApiResponse<LenderEarningsDto>?> GetLenderEarningsAsync(
+        CancellationToken cancellationToken = default)
+    {
+        return await _httpClient.GetFromJsonAsync<ApiResponse<LenderEarningsDto>>(
+            "api/dashboard/lender/earnings",
+            cancellationToken);
+    }
+
+    public async Task<ApiResponse<IReadOnlyList<BorrowerLoanDto>>?> GetBorrowerLoansAsync(
+        CancellationToken cancellationToken = default)
+    {
+        return await _httpClient.GetFromJsonAsync<ApiResponse<IReadOnlyList<BorrowerLoanDto>>>(
+            "api/dashboard/borrower/loans",
+            cancellationToken);
+    }
+
+    public async Task<ApiResponse<BorrowerPaymentSummaryDto>?> GetBorrowerPaymentSummaryAsync(
+        CancellationToken cancellationToken = default)
+    {
+        return await _httpClient.GetFromJsonAsync<ApiResponse<BorrowerPaymentSummaryDto>>(
+            "api/dashboard/borrower/upcoming",
+            cancellationToken);
+    }
 }

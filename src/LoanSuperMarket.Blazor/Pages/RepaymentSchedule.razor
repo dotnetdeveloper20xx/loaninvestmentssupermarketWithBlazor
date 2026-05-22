@@ -1,0 +1,175 @@
+@page "/repayment-schedule/{ScheduleId:guid}"
+@inject PaymentsApiClient PaymentsApiClient
+
+<PageHeader Title="Repayment Schedule"
+            Subtitle="View installment details and make payments.">
+</PageHeader>
+
+@if (!string.IsNullOrWhiteSpace(_errorMessage))
+{
+    <div class="mb-6 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+        @_errorMessage
+    </div>
+}
+
+@if (_isLoading)
+{
+    <div class="flex items-center justify-center py-12">
+        <div class="text-slate-500">Loading schedule...</div>
+    </div>
+}
+else if (_schedule is not null)
+{
+    <div class="mb-6 grid grid-cols-2 gap-4 md:grid-cols-5">
+        <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+            <div class="text-xs font-semibold text-slate-500 uppercase">Funded Amount</div>
+            <div class="mt-2 text-lg font-bold text-slate-900">£@_schedule.FundedAmount.ToString("N0")</div>
+        </div>
+        <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+            <div class="text-xs font-semibold text-slate-500 uppercase">Interest Rate</div>
+            <div class="mt-2 text-lg font-bold text-slate-900">@_schedule.AnnualInterestRate.ToString("N2")%</div>
+        </div>
+        <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+            <div class="text-xs font-semibold text-slate-500 uppercase">Term</div>
+            <div class="mt-2 text-lg font-bold text-slate-900">@_schedule.TermMonths months</div>
+        </div>
+        <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+            <div class="text-xs font-semibold text-slate-500 uppercase">Monthly EMI</div>
+            <div class="mt-2 text-lg font-bold text-slate-900">£@_schedule.MonthlyEmi.ToString("N2")</div>
+        </div>
+        <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+            <div class="text-xs font-semibold text-slate-500 uppercase">Total Interest</div>
+            <div class="mt-2 text-lg font-bold text-slate-900">£@_schedule.TotalInterestPayable.ToString("N2")</div>
+        </div>
+    </div>
+
+    <div class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+        <table class="w-full text-sm">
+            <thead class="bg-slate-50 border-b border-slate-200">
+                <tr>
+                    <th class="px-4 py-3 text-left text-xs font-semibold uppercase text-slate-500">#</th>
+                    <th class="px-4 py-3 text-left text-xs font-semibold uppercase text-slate-500">Due Date</th>
+                    <th class="px-4 py-3 text-right text-xs font-semibold uppercase text-slate-500">Principal</th>
+                    <th class="px-4 py-3 text-right text-xs font-semibold uppercase text-slate-500">Interest</th>
+                    <th class="px-4 py-3 text-right text-xs font-semibold uppercase text-slate-500">Total</th>
+                    <th class="px-4 py-3 text-right text-xs font-semibold uppercase text-slate-500">Balance</th>
+                    <th class="px-4 py-3 text-center text-xs font-semibold uppercase text-slate-500">Status</th>
+                    <th class="px-4 py-3 text-right text-xs font-semibold uppercase text-slate-500">Paid</th>
+                    <th class="px-4 py-3 text-right text-xs font-semibold uppercase text-slate-500">Late Fee</th>
+                    <th class="px-4 py-3 text-right text-xs font-semibold uppercase text-slate-500">Action</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100">
+                @foreach (var inst in _schedule.Installments)
+                {
+                    var isNext = _nextInstallmentId == inst.Id;
+                    <tr class="@(isNext ? "bg-blue-50" : "hover:bg-slate-50")">
+                        <td class="px-4 py-3 font-medium text-slate-900">@inst.InstallmentNumber</td>
+                        <td class="px-4 py-3 text-slate-700">@inst.DueDate.ToString("dd MMM yyyy")</td>
+                        <td class="px-4 py-3 text-right text-slate-700">£@inst.PrincipalPortion.ToString("N2")</td>
+                        <td class="px-4 py-3 text-right text-slate-700">£@inst.InterestPortion.ToString("N2")</td>
+                        <td class="px-4 py-3 text-right font-medium text-slate-900">£@inst.TotalAmount.ToString("N2")</td>
+                        <td class="px-4 py-3 text-right text-slate-700">£@inst.RemainingBalance.ToString("N2")</td>
+                        <td class="px-4 py-3 text-center">
+                            <StatusBadge Status="@inst.Status" />
+                        </td>
+                        <td class="px-4 py-3 text-right text-slate-700">£@inst.PaidAmount.ToString("N2")</td>
+                        <td class="px-4 py-3 text-right text-slate-700">
+                            @if (inst.LateFeeAmount > 0)
+                            {
+                                <span class="text-red-600">£@inst.LateFeeAmount.ToString("N2")</span>
+                            }
+                            else
+                            {
+                                <span>—</span>
+                            }
+                        </td>
+                        <td class="px-4 py-3 text-right">
+                            @if (isNext)
+                            {
+                                <button class="rounded-lg bg-green-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-green-700"
+                                        @onclick="() => OpenPaymentForm(inst)">
+                                    Pay
+                                </button>
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+
+    @if (_showPaymentForm && _payingInstallment is not null)
+    {
+        <PaymentForm Installment="_payingInstallment"
+                     ScheduleId="ScheduleId"
+                     OnClose="ClosePaymentForm"
+                     OnPaymentRecorded="HandlePaymentRecorded" />
+    }
+}
+
+@code {
+    [Parameter] public Guid ScheduleId { get; set; }
+
+    private RepaymentScheduleDto? _schedule;
+    private Guid? _nextInstallmentId;
+    private bool _isLoading = true;
+    private string? _errorMessage;
+    private bool _showPaymentForm;
+    private InstallmentDto? _payingInstallment;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadScheduleAsync();
+    }
+
+    private async Task LoadScheduleAsync()
+    {
+        _isLoading = true;
+        _errorMessage = null;
+
+        try
+        {
+            var response = await PaymentsApiClient.GetRepaymentScheduleAsync(ScheduleId);
+            if (response?.Success == true)
+            {
+                _schedule = response.Data;
+                _nextInstallmentId = _schedule?.Installments
+                    .Where(i => i.Status is "Pending" or "PartiallyPaid" or "Late" or "Missed")
+                    .OrderBy(i => i.InstallmentNumber)
+                    .FirstOrDefault()?.Id;
+            }
+            else
+            {
+                _errorMessage = response?.Errors.FirstOrDefault() ?? "Failed to load schedule.";
+            }
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = ex.Message;
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private void OpenPaymentForm(InstallmentDto installment)
+    {
+        _payingInstallment = installment;
+        _showPaymentForm = true;
+    }
+
+    private void ClosePaymentForm()
+    {
+        _showPaymentForm = false;
+        _payingInstallment = null;
+    }
+
+    private async Task HandlePaymentRecorded()
+    {
+        _showPaymentForm = false;
+        _payingInstallment = null;
+        await LoadScheduleAsync();
+    }
+}

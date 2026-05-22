@@ -1,0 +1,65 @@
+@inject DashboardApiClient DashboardApiClient
+
+@if (_summary is not null)
+{
+    <div class="grid grid-cols-2 gap-4 mb-6">
+        <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+            <div class="text-xs font-semibold text-slate-500 uppercase">Total Principal Paid</div>
+            <div class="mt-2 text-lg font-bold text-slate-900">£@_summary.TotalPrincipalPaid.ToString("N2")</div>
+        </div>
+        <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+            <div class="text-xs font-semibold text-slate-500 uppercase">Total Interest Paid</div>
+            <div class="mt-2 text-lg font-bold text-slate-900">£@_summary.TotalInterestPaid.ToString("N2")</div>
+        </div>
+    </div>
+
+    @if (_summary.PaymentHistory.Count > 0)
+    {
+        <div class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+            <table class="w-full text-sm">
+                <thead class="bg-slate-50 border-b border-slate-200">
+                    <tr>
+                        <th class="px-4 py-3 text-left text-xs font-semibold uppercase text-slate-500">Product</th>
+                        <th class="px-4 py-3 text-left text-xs font-semibold uppercase text-slate-500">#</th>
+                        <th class="px-4 py-3 text-left text-xs font-semibold uppercase text-slate-500">Due Date</th>
+                        <th class="px-4 py-3 text-left text-xs font-semibold uppercase text-slate-500">Paid Date</th>
+                        <th class="px-4 py-3 text-right text-xs font-semibold uppercase text-slate-500">Amount</th>
+                        <th class="px-4 py-3 text-center text-xs font-semibold uppercase text-slate-500">Status</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100">
+                    @foreach (var entry in _summary.PaymentHistory.Take(20))
+                    {
+                        <tr class="hover:bg-slate-50">
+                            <td class="px-4 py-3 text-slate-700">@entry.ProductTitle</td>
+                            <td class="px-4 py-3 text-slate-700">@entry.InstallmentNumber</td>
+                            <td class="px-4 py-3 text-slate-700">@entry.DueDate.ToString("dd MMM yyyy")</td>
+                            <td class="px-4 py-3 text-slate-700">@entry.PaidDate?.ToString("dd MMM yyyy")</td>
+                            <td class="px-4 py-3 text-right font-medium">£@entry.PaidAmount.ToString("N2")</td>
+                            <td class="px-4 py-3 text-center">
+                                <StatusBadge Status="@entry.Status" />
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+    else
+    {
+        <div class="py-8 text-center text-slate-500">No payment history yet.</div>
+    }
+}
+
+@code {
+    private BorrowerPaymentSummaryDto? _summary;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var response = await DashboardApiClient.GetBorrowerPaymentSummaryAsync();
+        if (response?.Success == true)
+        {
+            _summary = response.Data;
+        }
+    }
+}

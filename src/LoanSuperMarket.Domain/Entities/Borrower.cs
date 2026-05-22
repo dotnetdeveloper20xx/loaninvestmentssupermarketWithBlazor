@@ -40,6 +40,8 @@ public sealed class Borrower : AuditableEntity
 
     public BorrowerStatus Status { get; private set; }
 
+    public CreditTier? CreditTier { get; private set; }
+
     public string? UserId { get; private set; }
 
     public string FullName => $"{FirstName} {LastName}";
