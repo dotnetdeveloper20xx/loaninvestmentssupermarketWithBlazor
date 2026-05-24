@@ -1,0 +1,47 @@
+@using Microsoft.AspNetCore.Components.Routing
+@using Microsoft.AspNetCore.Components.WebAssembly.Services
+@inject LazyAssemblyLoader AssemblyLoader
+
+@* 
+    Lazy loading wrapper component.
+    In a production app, you'd configure specific assemblies to load on demand.
+    This demonstrates the pattern — actual assembly splitting requires build configuration.
+*@
+
+@if (_isLoading)
+{
+    <div class="flex items-center justify-center py-12">
+        <div class="animate-spin h-8 w-8 border-4 border-blue-500 border-t-transparent rounded-full"></div>
+    </div>
+}
+else
+{
+    @ChildContent
+}
+
+@code {
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+    [Parameter] public string[]? AssemblyNames { get; set; }
+
+    private bool _isLoading;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (AssemblyNames is { Length: > 0 })
+        {
+            _isLoading = true;
+            try
+            {
+                await AssemblyLoader.LoadAssembliesAsync(AssemblyNames);
+            }
+            catch
+            {
+                // Assembly not configured for lazy loading — continue normally
+            }
+            finally
+            {
+                _isLoading = false;
+            }
+        }
+    }
+}

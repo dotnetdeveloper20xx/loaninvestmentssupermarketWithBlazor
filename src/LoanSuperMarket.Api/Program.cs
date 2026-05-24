@@ -1,4 +1,5 @@
 using System.Text;
+using System.Threading.RateLimiting;
 using LoanSuperMarket.Api.Middleware;
 using LoanSuperMarket.Application;
 using LoanSuperMarket.Application.Common.Interfaces;
@@ -106,6 +107,27 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddSignalR();
+builder.Services.AddMemoryCache();
+builder.Services.AddHealthChecks()
+    .AddDbContextCheck<LoanSuperMarket.Infrastructure.Persistence.ApplicationDbContext>("database");
+
+// Rate limiting
+builder.Services.AddRateLimiter(options =>
+{
+    options.RejectionStatusCode = 429;
+    options.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(context =>
+    {
+        var clientId = context.Connection.RemoteIpAddress?.ToString() ?? "anonymous";
+        return RateLimitPartition.GetFixedWindowLimiter(clientId, _ => new FixedWindowRateLimiterOptions
+        {
+            PermitLimit = 100,
+            Window = TimeSpan.FromMinutes(1),
+            QueueLimit = 10,
+            QueueProcessingOrder = QueueProcessingOrder.OldestFirst
+        });
+    });
+});
+
 builder.Services.AddScoped<LoanSuperMarket.Application.Common.Interfaces.IRealTimeNotifier, LoanSuperMarket.Api.Services.SignalRNotifier>();
 
 // ---------------------------------------------------------------------------
@@ -131,6 +153,7 @@ await DevelopmentDataSeeder.SeedAsync(app.Services);
 // ---------------------------------------------------------------------------
 // Middleware pipeline (order matters)
 // ---------------------------------------------------------------------------
+app.UseMiddleware<CorrelationIdMiddleware>();
 app.UseMiddleware<GlobalExceptionMiddleware>();
 
 if (app.Environment.IsDevelopment())
@@ -143,12 +166,15 @@ app.UseHttpsRedirection();
 
 app.UseCors(BlazorCorsPolicy);
 
+app.UseRateLimiter();
+
 // Authentication MUST come before Authorization
 app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
 app.MapHub<LoanSuperMarket.Api.Hubs.LoanHub>("/hubs/loans");
+app.MapHealthChecks("/health");
 
 app.Run();
 

@@ -1,10 +1,1 @@
-﻿namespace LoanSuperMarket.Application.Tests;
-
-public class UnitTest1
-{
-    [Fact]
-    public void Test1()
-    {
-
-    }
-}
+﻿// Placeholder removed — see specific test files

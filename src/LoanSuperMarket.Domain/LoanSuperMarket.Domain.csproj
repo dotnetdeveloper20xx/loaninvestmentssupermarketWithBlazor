@@ -8,6 +8,7 @@
 
   <ItemGroup>
     <InternalsVisibleTo Include="LoanSuperMarket.Application" />
+    <InternalsVisibleTo Include="LoanSuperMarket.Domain.Tests" />
   </ItemGroup>
 
   <ItemGroup>

@@ -86,6 +86,9 @@ public static class DependencyInjection
         services.AddScoped<IUserQueryService, UserQueryService>();
         services.AddScoped<IRoleQueryService, RoleQueryService>();
 
+        // Dapper-based reporting (stored procedures)
+        services.AddScoped<IPlatformReportService, DapperPlatformReportService>();
+
         // Funding & Repayment Engine services
         services.AddScoped<IAmortizationService, AmortizationService>();
         services.AddScoped<IPaymentProcessor, PaymentProcessor>();

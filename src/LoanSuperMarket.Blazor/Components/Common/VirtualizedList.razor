@@ -1,0 +1,17 @@
+@typeparam TItem
+@using Microsoft.AspNetCore.Components.Web.Virtualization
+
+@* Reusable virtualized list wrapper for large datasets *@
+
+<div style="height: @($"{Height}px"); overflow-y: auto;">
+    <Virtualize Items="@Items" Context="item" ItemSize="@ItemSize">
+        @ItemTemplate(item)
+    </Virtualize>
+</div>
+
+@code {
+    [Parameter] public ICollection<TItem> Items { get; set; } = [];
+    [Parameter] public RenderFragment<TItem> ItemTemplate { get; set; } = default!;
+    [Parameter] public int Height { get; set; } = 500;
+    [Parameter] public float ItemSize { get; set; } = 50f;
+}
