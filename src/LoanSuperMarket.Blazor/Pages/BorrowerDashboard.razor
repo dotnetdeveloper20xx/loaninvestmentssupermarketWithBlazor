@@ -36,6 +36,10 @@
                 @onclick="SetTabUpcoming">
             Upcoming Payments
         </button>
+        <button class="px-4 py-2 text-sm font-semibold @(_activeTab == "calculator" ? "text-blue-600 border-b-2 border-blue-600" : "text-slate-500 hover:text-slate-700")"
+                @onclick="SetTabCalculator">
+            Calculator
+        </button>
     </div>
 
     @if (_activeTab == "loans")
@@ -49,6 +53,13 @@
     else if (_activeTab == "upcoming")
     {
         <UpcomingPayments />
+    }
+    else if (_activeTab == "calculator")
+    {
+        <LoanCalculatorWidget />
+        <div class="mt-6">
+            <AffordabilityCheck />
+        </div>
     }
     else
     {
@@ -145,6 +156,7 @@
     private void SetTabLoans() => _activeTab = "loans";
     private void SetTabHistory() => _activeTab = "history";
     private void SetTabUpcoming() => _activeTab = "upcoming";
+    private void SetTabCalculator() => _activeTab = "calculator";
 
     protected override async Task OnInitializedAsync()
     {

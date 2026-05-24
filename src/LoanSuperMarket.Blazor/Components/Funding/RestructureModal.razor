@@ -1,0 +1,160 @@
+@inject FundingApiClient FundingApiClient
+@inject ToastService ToastService
+
+@if (IsOpen)
+{
+    <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+        <div class="w-full max-w-lg rounded-2xl bg-white p-8 shadow-xl">
+            <div class="flex items-center justify-between mb-6">
+                <h2 class="text-xl font-bold text-slate-900">Restructure Loan</h2>
+                <button class="text-slate-400 hover:text-slate-600" @onclick="Close">✕</button>
+            </div>
+
+            <div class="mb-4 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-700">
+                ⚠️ Restructuring recalculates remaining principal with new terms.
+                Only available for late or distressed loans.
+            </div>
+
+            @if (_result is not null)
+            {
+                <div class="mb-4 rounded-xl border border-green-200 bg-green-50 p-4">
+                    <div class="text-sm font-bold text-green-800 mb-2">✓ Restructured Successfully</div>
+                    <div class="grid grid-cols-2 gap-2 text-sm text-green-700">
+                        <div>New Rate: @_result.NewRate.ToString("N2")%</div>
+                        <div>New Term: @_result.NewTermMonths months</div>
+                        <div>New EMI: £@_result.NewMonthlyEmi.ToString("N2")</div>
+                        <div>New Interest: £@_result.NewTotalInterest.ToString("N2")</div>
+                    </div>
+                </div>
+                <div class="flex justify-end">
+                    <button class="rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700"
+                            @onclick="HandleDone">
+                        Done
+                    </button>
+                </div>
+            }
+            else
+            {
+                @if (!string.IsNullOrWhiteSpace(_error))
+                {
+                    <div class="mb-4 rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+                        @_error
+                    </div>
+                }
+
+                <div class="space-y-4 mb-6">
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1">New Annual Rate (%)</label>
+                        <input type="number" step="0.01" @bind="_newRate"
+                               class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" />
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1">New Term (months)</label>
+                        <input type="number" @bind="_newTerm"
+                               class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" />
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1">Reason (optional)</label>
+                        <textarea @bind="_reason" rows="2"
+                                  class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                                  placeholder="Why is this loan being restructured?"></textarea>
+                    </div>
+                </div>
+
+                <div class="flex justify-end gap-3">
+                    <button class="rounded-xl border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+                            @onclick="Close">
+                        Cancel
+                    </button>
+                    <button class="rounded-xl bg-amber-600 px-4 py-2 text-sm font-semibold text-white hover:bg-amber-700"
+                            @onclick="Submit"
+                            disabled="@_isProcessing">
+                        @(_isProcessing ? "Processing..." : "Restructure")
+                    </button>
+                </div>
+            }
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public bool IsOpen { get; set; }
+    [Parameter] public Guid ScheduleId { get; set; }
+    [Parameter] public decimal CurrentRate { get; set; }
+    [Parameter] public int CurrentTerm { get; set; }
+    [Parameter] public EventCallback OnClose { get; set; }
+    [Parameter] public EventCallback OnRestructured { get; set; }
+
+    private decimal _newRate;
+    private int _newTerm;
+    private string? _reason;
+    private bool _isProcessing;
+    private string? _error;
+    private RestructureResultDto? _result;
+
+    protected override void OnParametersSet()
+    {
+        if (_newRate == 0) _newRate = CurrentRate;
+        if (_newTerm == 0) _newTerm = CurrentTerm + 6;
+    }
+
+    private void Close()
+    {
+        _error = null;
+        _result = null;
+        OnClose.InvokeAsync();
+    }
+
+    private async Task HandleDone()
+    {
+        _result = null;
+        await OnRestructured.InvokeAsync();
+    }
+
+    private async Task Submit()
+    {
+        _error = null;
+
+        if (_newRate <= 0 || _newRate > 100)
+        {
+            _error = "Rate must be between 0.01% and 100%.";
+            return;
+        }
+
+        if (_newTerm <= 0 || _newTerm > 360)
+        {
+            _error = "Term must be between 1 and 360 months.";
+            return;
+        }
+
+        _isProcessing = true;
+        try
+        {
+            var request = new RestructureLoanRequest
+            {
+                NewAnnualRate = _newRate,
+                NewTermMonths = _newTerm,
+                Reason = _reason
+            };
+
+            var response = await FundingApiClient.RestructureLoanAsync(ScheduleId, request);
+            if (response?.Success == true)
+            {
+                _result = response.Data;
+                ToastService.ShowSuccess("Restructured", "Loan terms updated successfully.");
+            }
+            else
+            {
+                _error = response?.Errors.FirstOrDefault() ?? "Restructuring failed.";
+            }
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+        }
+        finally
+        {
+            _isProcessing = false;
+        }
+    }
+}

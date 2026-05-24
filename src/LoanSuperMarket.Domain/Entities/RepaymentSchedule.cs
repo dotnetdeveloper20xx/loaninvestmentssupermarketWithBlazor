@@ -108,4 +108,26 @@ public sealed class RepaymentSchedule : AuditableEntity
 
         MarkUpdated();
     }
+
+    public void Restructure(decimal newRate, int newTermMonths, decimal newEmi, decimal newTotalInterest)
+    {
+        if (Performance == LoanPerformance.OnTime)
+        {
+            throw new DomainException("Cannot restructure a loan that is performing on time. Only late or distressed loans can be restructured.");
+        }
+
+        AnnualInterestRate = newRate;
+        TermMonths = newTermMonths;
+        MonthlyEmi = newEmi;
+        TotalInterestPayable = newTotalInterest;
+
+        // Reset performance after restructuring
+        Performance = LoanPerformance.OnTime;
+        MarkUpdated();
+    }
+
+    public void ClearInstallments()
+    {
+        _installments.Clear();
+    }
 }

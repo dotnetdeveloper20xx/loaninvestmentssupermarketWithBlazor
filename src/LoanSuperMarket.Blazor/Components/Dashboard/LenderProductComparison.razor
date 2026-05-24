@@ -1,0 +1,57 @@
+@inject DashboardApiClient DashboardApiClient
+
+<div class="mt-6">
+    <h3 class="text-lg font-semibold text-slate-900 mb-4">Product Performance Comparison</h3>
+
+    @if (_analytics?.LoanBreakdown.Count > 0)
+    {
+        var grouped = _analytics.LoanBreakdown
+            .GroupBy(l => l.Performance)
+            .Select(g => new { Status = g.Key, Count = g.Count(), TotalFunded = g.Sum(x => x.FundedAmount), AvgRoi = g.Average(x => x.RoiPercentage) })
+            .ToList();
+
+        <div class="grid gap-4 md:grid-cols-3 mb-6">
+            @foreach (var group in grouped)
+            {
+                <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+                    <div class="flex items-center justify-between mb-2">
+                        <Badge Text="@group.Status"
+                               Color="@(group.Status == "OnTime" ? "green" : group.Status == "Late" ? "amber" : "red")" />
+                        <span class="text-xs text-slate-400">@group.Count loans</span>
+                    </div>
+                    <div class="text-sm text-slate-700">
+                        <div>Funded: <span class="font-semibold">£@group.TotalFunded.ToString("N0")</span></div>
+                        <div>Avg ROI: <span class="font-semibold">@group.AvgRoi.ToString("N2")%</span></div>
+                    </div>
+                </div>
+            }
+        </div>
+
+        <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+            <BarChart Title="ROI by Loan"
+                      Data="@(_analytics.LoanBreakdown.Select(l => new BarChartItem
+                      {
+                          Label = l.BorrowerName.Split(' ').FirstOrDefault() ?? "",
+                          Value = l.RoiPercentage,
+                          Color = l.Performance == "OnTime" ? "bg-green-500" : l.Performance == "Late" ? "bg-amber-500" : "bg-red-500"
+                      }).ToList())" />
+        </div>
+    }
+    else
+    {
+        <div class="py-8 text-center text-slate-500">No loan data available for comparison.</div>
+    }
+</div>
+
+@code {
+    private InvestorAnalyticsDto? _analytics;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var response = await DashboardApiClient.GetInvestorAnalyticsAsync();
+        if (response?.Success == true)
+        {
+            _analytics = response.Data;
+        }
+    }
+}

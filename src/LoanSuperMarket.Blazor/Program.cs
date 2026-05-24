@@ -53,6 +53,7 @@ builder.Services.AddScoped<DashboardApiClient>();
 builder.Services.AddScoped<FundingApiClient>();
 builder.Services.AddScoped<PaymentsApiClient>();
 builder.Services.AddScoped<LoanHubClient>();
+builder.Services.AddScoped<ThemeService>();
 builder.Services.AddScoped<ToastService>();
 builder.Services.AddScoped<ModalService>();
 builder.Services.AddScoped<DrawerService>();

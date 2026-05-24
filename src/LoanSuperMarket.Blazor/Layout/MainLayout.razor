@@ -1,6 +1,8 @@
 ﻿@inherits LayoutComponentBase
 @inject NavigationManager NavigationManager
 @inject AuthApiClient AuthApiClient
+@inject LoanHubClient LoanHubClient
+@inject JwtAuthenticationStateProvider AuthProvider
 
 <div class="page-shell">
     <div class="flex min-h-screen">
@@ -49,6 +51,30 @@
                                  activeClass="bg-[#2563EB] text-white shadow-lg shadow-blue-900/30">
                             <span>📋</span>
                             <span>My Applications</span>
+                        </NavLink>
+                        <NavLink href="borrower-dashboard"
+                                 class="flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-blue-100 hover:bg-white/10"
+                                 activeClass="bg-[#2563EB] text-white shadow-lg shadow-blue-900/30">
+                            <span>💳</span>
+                            <span>My Loans</span>
+                        </NavLink>
+                    </Authorized>
+                </AuthorizeView>
+
+                @* Lender section *@
+                <AuthorizeView Roles="Lender,Admin">
+                    <Authorized>
+                        <NavLink href="funding-queue"
+                                 class="flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-blue-100 hover:bg-white/10"
+                                 activeClass="bg-[#2563EB] text-white shadow-lg shadow-blue-900/30">
+                            <span>📋</span>
+                            <span>Funding Queue</span>
+                        </NavLink>
+                        <NavLink href="lender-dashboard"
+                                 class="flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-blue-100 hover:bg-white/10"
+                                 activeClass="bg-[#2563EB] text-white shadow-lg shadow-blue-900/30">
+                            <span>📊</span>
+                            <span>My Portfolio</span>
                         </NavLink>
                     </Authorized>
                 </AuthorizeView>
@@ -205,12 +231,47 @@
                             <span>🛡️</span>
                             <span>Roles</span>
                         </NavLink>
+
+                        <NavLink href="admin/loans"
+                                 class="flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-blue-100 hover:bg-white/10"
+                                 activeClass="bg-[#2563EB] text-white shadow-lg shadow-blue-900/30">
+                            <span>🏦</span>
+                            <span>All Loans</span>
+                        </NavLink>
+
+                        <NavLink href="admin/collections"
+                                 class="flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-blue-100 hover:bg-white/10"
+                                 activeClass="bg-[#2563EB] text-white shadow-lg shadow-blue-900/30">
+                            <span>⚖️</span>
+                            <span>Collections</span>
+                        </NavLink>
                     </Authorized>
                 </AuthorizeView>
 
                 @* Sessions - all authenticated *@
                 <AuthorizeView>
                     <Authorized>
+                        <NavLink href="account/profile"
+                                 class="flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-blue-100 hover:bg-white/10"
+                                 activeClass="bg-[#2563EB] text-white shadow-lg shadow-blue-900/30">
+                            <span>👤</span>
+                            <span>Profile</span>
+                        </NavLink>
+
+                        <NavLink href="account/notifications"
+                                 class="flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-blue-100 hover:bg-white/10"
+                                 activeClass="bg-[#2563EB] text-white shadow-lg shadow-blue-900/30">
+                            <span>🔔</span>
+                            <span>Notifications</span>
+                        </NavLink>
+
+                        <NavLink href="help"
+                                 class="flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-blue-100 hover:bg-white/10"
+                                 activeClass="bg-[#2563EB] text-white shadow-lg shadow-blue-900/30">
+                            <span>❓</span>
+                            <span>Help & FAQ</span>
+                        </NavLink>
+
                         <NavLink href="account/sessions"
                                  class="flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-blue-100 hover:bg-white/10"
                                  activeClass="bg-[#2563EB] text-white shadow-lg shadow-blue-900/30">
@@ -243,6 +304,8 @@
                 </div>
 
                 <div class="flex items-center gap-4">
+                    <ThemeToggle />
+
                     <button class="btn btn-ghost btn-circle">
                         🔔
                     </button>
@@ -327,7 +390,20 @@
 
     private async Task HandleLogoutAsync()
     {
+        await LoanHubClient.StopAsync();
         await AuthApiClient.LogoutAsync();
         NavigationManager.NavigateTo("/login", forceLoad: false);
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            var token = await AuthProvider.GetAccessTokenAsync();
+            if (!string.IsNullOrWhiteSpace(token))
+            {
+                await LoanHubClient.StartAsync(token);
+            }
+        }
     }
 }

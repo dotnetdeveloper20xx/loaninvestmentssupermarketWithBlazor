@@ -1,0 +1,33 @@
+@* Reusable progress bar with label and percentage *@
+
+<div>
+    @if (ShowLabel)
+    {
+        <div class="flex items-center justify-between text-xs text-slate-500 mb-1">
+            <span>@Label</span>
+            <span>@Percentage.ToString("N0")%</span>
+        </div>
+    }
+    <div class="h-@Height w-full rounded-full bg-slate-200 overflow-hidden">
+        <div class="h-full rounded-full @ColorClass transition-all duration-500"
+             style="width: @Math.Min(Percentage, 100)%">
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter] public decimal Percentage { get; set; }
+    [Parameter] public string Label { get; set; } = string.Empty;
+    [Parameter] public bool ShowLabel { get; set; } = true;
+    [Parameter] public int Height { get; set; } = 2;
+    [Parameter] public string Color { get; set; } = "blue"; // blue, green, amber, red
+
+    private string ColorClass => Color switch
+    {
+        "green" => "bg-green-500",
+        "amber" => "bg-amber-500",
+        "red" => "bg-red-500",
+        "purple" => "bg-purple-500",
+        _ => "bg-blue-500"
+    };
+}

@@ -1,0 +1,104 @@
+@page "/admin/collections"
+@using Microsoft.AspNetCore.Authorization
+@attribute [Authorize(Roles = "Admin")]
+@inject DashboardApiClient DashboardApiClient
+@inject NavigationManager Navigation
+
+<PageHeader Title="Collections"
+            Subtitle="Manage defaulted loans and recovery workflows.">
+</PageHeader>
+
+@if (_isLoading)
+{
+    <LoadingSkeleton Variant="table" Rows="5" />
+}
+else if (_items.Count == 0)
+{
+    <EmptyState Icon="✅"
+                Title="No defaults"
+                Message="There are no defaulted loans requiring collection action." />
+}
+else
+{
+    <div class="mb-6 grid grid-cols-2 gap-4 md:grid-cols-3">
+        <StatCard Label="Total in Collections" Value="@_items.Count.ToString()" ColorScheme="danger" />
+        <StatCard Label="Total Outstanding" Value="@($"£{_items.Sum(i => i.OutstandingAmount):N0}")" ColorScheme="warning" />
+        <StatCard Label="Avg Missed Installments" Value="@($"{(_items.Count > 0 ? _items.Average(i => i.MissedInstallments) : 0):N1}")" ColorScheme="default" />
+    </div>
+
+    <div class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+        <table class="w-full text-sm">
+            <thead class="bg-slate-50 border-b border-slate-200">
+                <tr>
+                    <th class="px-4 py-3 text-left text-xs font-semibold uppercase text-slate-500">Borrower</th>
+                    <th class="px-4 py-3 text-left text-xs font-semibold uppercase text-slate-500">Lender</th>
+                    <th class="px-4 py-3 text-right text-xs font-semibold uppercase text-slate-500">Outstanding</th>
+                    <th class="px-4 py-3 text-center text-xs font-semibold uppercase text-slate-500">Missed</th>
+                    <th class="px-4 py-3 text-center text-xs font-semibold uppercase text-slate-500">Status</th>
+                    <th class="px-4 py-3 text-left text-xs font-semibold uppercase text-slate-500">Default Date</th>
+                    <th class="px-4 py-3 text-right text-xs font-semibold uppercase text-slate-500">Actions</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100">
+                @foreach (var item in _items)
+                {
+                    <tr class="hover:bg-slate-50">
+                        <td class="px-4 py-3 font-medium text-slate-900">@item.BorrowerName</td>
+                        <td class="px-4 py-3 text-slate-700">@item.LenderName</td>
+                        <td class="px-4 py-3 text-right font-semibold text-red-700">£@item.OutstandingAmount.ToString("N0")</td>
+                        <td class="px-4 py-3 text-center">@item.MissedInstallments</td>
+                        <td class="px-4 py-3 text-center">
+                            <Badge Text="@item.CollectionStatus"
+                                   Color="@GetStatusColor(item.CollectionStatus)" />
+                        </td>
+                        <td class="px-4 py-3 text-xs text-slate-500">@item.DefaultDate.ToString("dd MMM yyyy")</td>
+                        <td class="px-4 py-3 text-right">
+                            <button class="rounded-lg border border-blue-200 px-3 py-1.5 text-xs font-semibold text-blue-700 hover:bg-blue-50"
+                                    @onclick="() => ViewSchedule(item.ScheduleId)">
+                                View Loan
+                            </button>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}
+
+@code {
+    private List<CollectionItemDto> _items = [];
+    private bool _isLoading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _isLoading = true;
+        try
+        {
+            var response = await DashboardApiClient.GetCollectionsAsync();
+            if (response?.Success == true)
+            {
+                _items = response.Data?.ToList() ?? [];
+            }
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private void ViewSchedule(Guid scheduleId)
+    {
+        Navigation.NavigateTo($"/repayment-schedule/{scheduleId}");
+    }
+
+    private static string GetStatusColor(string status) => status switch
+    {
+        "New" => "red",
+        "ContactAttempted" => "amber",
+        "PaymentPlanAgreed" => "blue",
+        "InRepaymentPlan" => "purple",
+        "WrittenOff" => "slate",
+        "Recovered" => "green",
+        _ => "slate"
+    };
+}

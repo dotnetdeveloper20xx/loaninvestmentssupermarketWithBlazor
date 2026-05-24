@@ -91,4 +91,18 @@ public sealed class FundingApiClient
         return await response.Content.ReadFromJsonAsync<ApiResponse<decimal>>(
             cancellationToken);
     }
+
+    public async Task<ApiResponse<RestructureResultDto>?> RestructureLoanAsync(
+        Guid scheduleId,
+        RestructureLoanRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        var response = await _httpClient.PostAsJsonAsync(
+            $"api/funding/{scheduleId}/restructure",
+            request,
+            cancellationToken);
+
+        return await response.Content.ReadFromJsonAsync<ApiResponse<RestructureResultDto>>(
+            cancellationToken);
+    }
 }

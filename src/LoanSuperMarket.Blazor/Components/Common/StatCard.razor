@@ -1,0 +1,77 @@
+@* Reusable stat/metric card with label, value, optional trend indicator *@
+
+<div class="rounded-2xl border @BorderClass bg-white p-5 shadow-sm @(IsClickable ? "cursor-pointer hover:shadow-md transition" : "")">
+    <div class="text-xs font-semibold uppercase tracking-wide @LabelClass">@Label</div>
+    <div class="mt-2 text-xl font-bold @ValueClass">@Value</div>
+    @if (!string.IsNullOrWhiteSpace(Subtitle))
+    {
+        <div class="mt-1 text-xs @SubtitleClass">@Subtitle</div>
+    }
+    @if (!string.IsNullOrWhiteSpace(Trend))
+    {
+        <div class="mt-2 flex items-center gap-1 text-xs @TrendClass">
+            <span>@TrendIcon</span>
+            <span>@Trend</span>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter] public string Label { get; set; } = string.Empty;
+    [Parameter] public string Value { get; set; } = string.Empty;
+    [Parameter] public string? Subtitle { get; set; }
+    [Parameter] public string? Trend { get; set; }
+    [Parameter] public string TrendDirection { get; set; } = "neutral"; // up, down, neutral
+    [Parameter] public string ColorScheme { get; set; } = "default"; // default, success, danger, warning, info
+    [Parameter] public bool IsClickable { get; set; }
+
+    private string BorderClass => ColorScheme switch
+    {
+        "success" => "border-green-200",
+        "danger" => "border-red-200",
+        "warning" => "border-amber-200",
+        "info" => "border-blue-200",
+        _ => "border-slate-200"
+    };
+
+    private string LabelClass => ColorScheme switch
+    {
+        "success" => "text-green-600",
+        "danger" => "text-red-600",
+        "warning" => "text-amber-600",
+        "info" => "text-blue-600",
+        _ => "text-slate-500"
+    };
+
+    private string ValueClass => ColorScheme switch
+    {
+        "success" => "text-green-700",
+        "danger" => "text-red-700",
+        "warning" => "text-amber-700",
+        "info" => "text-blue-700",
+        _ => "text-slate-900"
+    };
+
+    private string SubtitleClass => ColorScheme switch
+    {
+        "success" => "text-green-500",
+        "danger" => "text-red-500",
+        "warning" => "text-amber-500",
+        "info" => "text-blue-500",
+        _ => "text-slate-400"
+    };
+
+    private string TrendClass => TrendDirection switch
+    {
+        "up" => "text-green-600",
+        "down" => "text-red-600",
+        _ => "text-slate-500"
+    };
+
+    private string TrendIcon => TrendDirection switch
+    {
+        "up" => "↑",
+        "down" => "↓",
+        _ => "→"
+    };
+}

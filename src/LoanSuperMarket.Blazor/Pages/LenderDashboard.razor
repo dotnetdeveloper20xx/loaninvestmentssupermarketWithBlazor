@@ -20,6 +20,14 @@
                 @onclick="SetTabEarnings">
             Earnings
         </button>
+        <button class="px-4 py-2 text-sm font-semibold @(_activeTab == "analytics" ? "text-blue-600 border-b-2 border-blue-600" : "text-slate-500 hover:text-slate-700")"
+                @onclick="SetTabAnalytics">
+            Analytics
+        </button>
+        <button class="px-4 py-2 text-sm font-semibold @(_activeTab == "comparison" ? "text-blue-600 border-b-2 border-blue-600" : "text-slate-500 hover:text-slate-700")"
+                @onclick="SetTabComparison">
+            Comparison
+        </button>
     </div>
 
     @if (_activeTab == "portfolio")
@@ -34,6 +42,14 @@
     {
         <LenderEarnings />
     }
+    else if (_activeTab == "analytics")
+    {
+        <InvestorAnalytics />
+    }
+    else if (_activeTab == "comparison")
+    {
+        <LenderProductComparison />
+    }
 </div>
 
 @code {
@@ -42,4 +58,6 @@
     private void SetTabPortfolio() => _activeTab = "portfolio";
     private void SetTabLoans() => _activeTab = "loans";
     private void SetTabEarnings() => _activeTab = "earnings";
+    private void SetTabAnalytics() => _activeTab = "analytics";
+    private void SetTabComparison() => _activeTab = "comparison";
 }

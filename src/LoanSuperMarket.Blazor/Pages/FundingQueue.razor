@@ -61,17 +61,13 @@
 
 @if (_isLoading)
 {
-    <div class="flex items-center justify-center py-12">
-        <div class="text-slate-500">Loading funding queue...</div>
-    </div>
+    <LoadingSkeleton Variant="table" Rows="5" />
 }
 else if (_queueItems.Count == 0)
 {
-    <div class="flex flex-col items-center justify-center py-12">
-        <div class="text-4xl mb-4">📋</div>
-        <div class="text-lg font-semibold text-slate-700">No applications in queue</div>
-        <div class="text-sm text-slate-500 mt-1">There are no approved applications awaiting funding.</div>
-    </div>
+    <EmptyState Icon="📋"
+                Title="No applications in queue"
+                Message="There are no approved applications awaiting funding." />
 }
 else
 {

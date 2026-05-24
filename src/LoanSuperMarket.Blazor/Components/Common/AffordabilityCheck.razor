@@ -1,0 +1,86 @@
+@* Pre-application affordability calculator *@
+
+<div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+    <h3 class="text-lg font-semibold text-slate-900 mb-2">🧮 Can I Afford This?</h3>
+    <p class="text-sm text-slate-500 mb-4">Enter your monthly income and expenses to check affordability.</p>
+
+    <div class="grid gap-4 md:grid-cols-2 mb-4">
+        <div>
+            <label class="block text-sm font-medium text-slate-700 mb-1">Monthly Income (£)</label>
+            <input type="number" step="100" @bind="_income" @bind:event="oninput" @bind:after="Evaluate"
+                   class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" />
+        </div>
+        <div>
+            <label class="block text-sm font-medium text-slate-700 mb-1">Monthly Expenses (£)</label>
+            <input type="number" step="100" @bind="_expenses" @bind:event="oninput" @bind:after="Evaluate"
+                   class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" />
+        </div>
+        <div>
+            <label class="block text-sm font-medium text-slate-700 mb-1">Desired Loan Amount (£)</label>
+            <input type="number" step="500" @bind="_loanAmount" @bind:event="oninput" @bind:after="Evaluate"
+                   class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" />
+        </div>
+        <div>
+            <label class="block text-sm font-medium text-slate-700 mb-1">Term (months)</label>
+            <input type="number" @bind="_term" @bind:event="oninput" @bind:after="Evaluate"
+                   class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" />
+        </div>
+    </div>
+
+    @if (_evaluated)
+    {
+        <div class="rounded-xl p-4 @(_canAfford ? "bg-green-50 border border-green-200" : "bg-red-50 border border-red-200")">
+            <div class="flex items-center gap-2 mb-2">
+                <span class="text-lg">@(_canAfford ? "✅" : "⚠️")</span>
+                <span class="font-semibold @(_canAfford ? "text-green-800" : "text-red-800")">
+                    @(_canAfford ? "Affordable" : "May be difficult to afford")
+                </span>
+            </div>
+            <div class="grid grid-cols-2 gap-2 text-sm @(_canAfford ? "text-green-700" : "text-red-700")">
+                <div>Disposable income: <strong>£@_disposable.ToString("N0")</strong>/mo</div>
+                <div>Estimated EMI: <strong>£@_emi.ToString("N0")</strong>/mo</div>
+                <div>Debt-to-income: <strong>@_dti.ToString("N0")%</strong></div>
+                <div>Remaining after EMI: <strong>£@(_disposable - _emi).ToString("N0")</strong>/mo</div>
+            </div>
+            @if (!_canAfford)
+            {
+                <p class="mt-2 text-xs text-red-600">
+                    The EMI would consume more than 40% of your disposable income. Consider a smaller amount or longer term.
+                </p>
+            }
+        </div>
+    }
+</div>
+
+@code {
+    private decimal _income = 3500;
+    private decimal _expenses = 1800;
+    private decimal _loanAmount = 10000;
+    private int _term = 24;
+    private decimal _emi;
+    private decimal _disposable;
+    private decimal _dti;
+    private bool _canAfford;
+    private bool _evaluated;
+
+    protected override void OnInitialized() => Evaluate();
+
+    private void Evaluate()
+    {
+        if (_income <= 0 || _loanAmount <= 0 || _term <= 0)
+        {
+            _evaluated = false;
+            return;
+        }
+
+        _disposable = _income - _expenses;
+        var rate = 12m; // Assume average rate
+        var monthlyRate = rate / 12m / 100m;
+        var compoundFactor = (decimal)Math.Pow((double)(1m + monthlyRate), _term);
+        _emi = Math.Round(_loanAmount * monthlyRate * compoundFactor / (compoundFactor - 1m), 2);
+
+        _dti = _disposable > 0 ? _emi / _disposable * 100 : 100;
+        _canAfford = _dti <= 40 && _disposable > _emi;
+        _evaluated = true;
+    }
+}

@@ -20,13 +20,19 @@ public sealed class LoanHubClient : IAsyncDisposable
 
     public LoanHubClient(NavigationManager navigation)
     {
+        // The hub URL is relative to the API, not the Blazor app
+        // In production, this would come from configuration
         var baseUri = navigation.BaseUri.TrimEnd('/');
         _hubUrl = $"{baseUri}/hubs/loans";
     }
 
-    public async Task StartAsync(string accessToken)
+    public async Task StartAsync(string? accessToken)
     {
-        if (_connection is not null) return;
+        if (_connection is not null && _connection.State != HubConnectionState.Disconnected)
+            return;
+
+        if (string.IsNullOrWhiteSpace(accessToken))
+            return;
 
         _connection = new HubConnectionBuilder()
             .WithUrl(_hubUrl, options =>
@@ -41,15 +47,14 @@ public sealed class LoanHubClient : IAsyncDisposable
             OnFundingQueueChanged?.Invoke();
         });
 
-        _connection.On<object>("PaymentRecorded", (data) =>
+        _connection.On("PaymentRecorded", (Guid scheduleId, decimal amount) =>
         {
-            // Parse the anonymous object
-            OnPaymentRecorded?.Invoke(Guid.Empty, 0);
+            OnPaymentRecorded?.Invoke(scheduleId, amount);
         });
 
-        _connection.On<object>("LoanFunded", (data) =>
+        _connection.On("LoanFunded", (Guid applicationId, decimal amount) =>
         {
-            OnLoanFunded?.Invoke(Guid.Empty, 0);
+            OnLoanFunded?.Invoke(applicationId, amount);
         });
 
         try
@@ -59,6 +64,7 @@ public sealed class LoanHubClient : IAsyncDisposable
         catch
         {
             // Connection failed — non-critical, app works without real-time
+            // This happens when the API isn't running or the hub URL is wrong
         }
     }
 
@@ -66,7 +72,11 @@ public sealed class LoanHubClient : IAsyncDisposable
     {
         if (_connection is not null)
         {
-            await _connection.StopAsync();
+            try
+            {
+                await _connection.StopAsync();
+            }
+            catch { }
         }
     }
 
@@ -74,7 +84,12 @@ public sealed class LoanHubClient : IAsyncDisposable
     {
         if (_connection is not null)
         {
-            await _connection.DisposeAsync();
+            try
+            {
+                await _connection.DisposeAsync();
+            }
+            catch { }
+
             _connection = null;
         }
     }

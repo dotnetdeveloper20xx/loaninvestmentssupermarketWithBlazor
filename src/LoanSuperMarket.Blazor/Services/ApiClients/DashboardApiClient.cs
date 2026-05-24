@@ -57,6 +57,14 @@ public sealed class DashboardApiClient
             cancellationToken);
     }
 
+    public async Task<ApiResponse<InvestorAnalyticsDto>?> GetInvestorAnalyticsAsync(
+        CancellationToken cancellationToken = default)
+    {
+        return await _httpClient.GetFromJsonAsync<ApiResponse<InvestorAnalyticsDto>>(
+            "api/dashboard/lender/analytics",
+            cancellationToken);
+    }
+
     public async Task<ApiResponse<IReadOnlyList<BorrowerLoanDto>>?> GetBorrowerLoansAsync(
         CancellationToken cancellationToken = default)
     {
@@ -80,6 +88,33 @@ public sealed class DashboardApiClient
     {
         return await _httpClient.GetFromJsonAsync<ApiResponse<IReadOnlyList<AuditLogDto>>>(
             $"api/dashboard/audit/{entityName}/{entityId}",
+            cancellationToken);
+    }
+
+    public async Task<ApiResponse<AdminLoansOverviewDto>?> GetAdminLoansOverviewAsync(
+        string? performance = null,
+        string? lender = null,
+        CancellationToken cancellationToken = default)
+    {
+        var queryParams = new List<string>();
+        if (!string.IsNullOrWhiteSpace(performance))
+            queryParams.Add($"performance={Uri.EscapeDataString(performance)}");
+        if (!string.IsNullOrWhiteSpace(lender))
+            queryParams.Add($"lender={Uri.EscapeDataString(lender)}");
+
+        var url = "api/dashboard/admin/loans";
+        if (queryParams.Count > 0)
+            url += "?" + string.Join("&", queryParams);
+
+        return await _httpClient.GetFromJsonAsync<ApiResponse<AdminLoansOverviewDto>>(
+            url, cancellationToken);
+    }
+
+    public async Task<ApiResponse<IReadOnlyList<CollectionItemDto>>?> GetCollectionsAsync(
+        CancellationToken cancellationToken = default)
+    {
+        return await _httpClient.GetFromJsonAsync<ApiResponse<IReadOnlyList<CollectionItemDto>>>(
+            "api/dashboard/admin/collections",
             cancellationToken);
     }
 }

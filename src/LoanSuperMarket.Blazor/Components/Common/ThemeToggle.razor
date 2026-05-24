@@ -1,0 +1,22 @@
+@inject ThemeService ThemeService
+
+<button @onclick="Toggle"
+        class="rounded-lg p-2 text-sm hover:bg-slate-200 dark:hover:bg-slate-700 transition"
+        title="@(ThemeService.IsDark ? "Switch to light mode" : "Switch to dark mode")">
+    @if (ThemeService.IsDark)
+    {
+        <span>☀️</span>
+    }
+    else
+    {
+        <span>🌙</span>
+    }
+</button>
+
+@code {
+    private async Task Toggle()
+    {
+        await ThemeService.ToggleAsync();
+        StateHasChanged();
+    }
+}

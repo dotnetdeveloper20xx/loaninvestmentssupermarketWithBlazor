@@ -113,6 +113,18 @@ public sealed class FundingController : ControllerBase
         return Ok(result);
     }
 
+    [HttpPost("{scheduleId:guid}/restructure")]
+    public async Task<ActionResult<ApiResponse<RestructureResultDto>>> RestructureLoan(
+        Guid scheduleId,
+        [FromBody] RestructureLoanRequest request,
+        CancellationToken cancellationToken)
+    {
+        var command = new Application.Features.Funding.RestructureLoan.RestructureLoanCommand(
+            scheduleId, request.NewAnnualRate, request.NewTermMonths, request.Reason);
+        var result = await _sender.Send(command, cancellationToken);
+        return Ok(result);
+    }
+
     private async Task<Guid?> GetCurrentLenderIdAsync(CancellationToken cancellationToken)
     {
         if (!_currentUserService.IsAuthenticated || string.IsNullOrEmpty(_currentUserService.UserId))

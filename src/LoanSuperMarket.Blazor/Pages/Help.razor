@@ -1,0 +1,42 @@
+@page "/help"
+
+<PageHeader Title="Help & FAQ"
+            Subtitle="Common questions about using the platform.">
+</PageHeader>
+
+<div class="max-w-3xl space-y-4">
+
+    <FaqItem Question="How do I apply for a loan?"
+             Answer="Navigate to 'Apply for Loan' from the sidebar. You'll be guided through a wizard that collects your details, matches you with suitable products, and submits your application for review." />
+
+    <FaqItem Question="How long does approval take?"
+             Answer="Most applications are reviewed within 24-48 hours. You'll receive a notification when your application status changes." />
+
+    <FaqItem Question="How does funding work?"
+             Answer="Once approved, your application enters the Funding Queue where lenders can review and fund it. When a lender accepts, the funds are transferred and your repayment schedule is generated automatically." />
+
+    <FaqItem Question="What happens if I miss a payment?"
+             Answer="There's a 5-day grace period after each due date. After that, a 2% late fee is applied. If 3 consecutive payments are missed, the loan enters default status." />
+
+    <FaqItem Question="Can I pay off my loan early?"
+             Answer="Yes! On your repayment schedule page, click 'Pay All Remaining' to settle the entire outstanding balance in one payment." />
+
+    <FaqItem Question="How do I add funds as a lender?"
+             Answer="Go to your Portfolio dashboard and click on the 'Available Funds' card. A top-up modal will appear where you can add capital to your account." />
+
+    <FaqItem Question="What is loan restructuring?"
+             Answer="If a loan is in distress (late or defaulted), lenders can restructure it by adjusting the interest rate and extending the term. This recalculates the remaining installments with new terms." />
+
+    <FaqItem Question="How is my interest rate determined?"
+             Answer="Your rate is based on the product's base rate plus a credit tier adjustment: Tier A (no adjustment), Tier B (+2%), Tier C (+4%). This is calculated once at funding time." />
+
+    <FaqItem Question="How do I change my notification preferences?"
+             Answer="Go to Account → Notifications from the sidebar. You can toggle individual notification types and choose your preferred delivery channel." />
+
+    <FaqItem Question="Is my data secure?"
+             Answer="Yes. The platform uses JWT authentication with refresh tokens, role-based access control, and all sensitive operations require re-authentication. Data is encrypted in transit via HTTPS." />
+
+</div>
+
+@code {
+}

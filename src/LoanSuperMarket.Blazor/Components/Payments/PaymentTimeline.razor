@@ -1,0 +1,53 @@
+@* Visual timeline showing payment status per installment as colored blocks *@
+
+<div class="mt-6 mb-4">
+    <h3 class="text-sm font-semibold text-slate-700 mb-3">Payment Performance</h3>
+
+    <div class="flex items-center gap-1 mb-2">
+        @foreach (var inst in Installments.OrderBy(i => i.InstallmentNumber))
+        {
+            <div class="flex-1 h-8 rounded-md flex items-center justify-center text-xs font-medium cursor-default
+                @GetBlockColor(inst.Status)"
+                 title="@($"#{inst.InstallmentNumber} — {inst.Status} — Due {inst.DueDate:dd MMM}")">
+                @inst.InstallmentNumber
+            </div>
+        }
+    </div>
+
+    <div class="flex items-center gap-4 text-xs text-slate-500">
+        <div class="flex items-center gap-1">
+            <div class="h-3 w-3 rounded-sm bg-green-500"></div>
+            <span>Paid</span>
+        </div>
+        <div class="flex items-center gap-1">
+            <div class="h-3 w-3 rounded-sm bg-blue-400"></div>
+            <span>Partial</span>
+        </div>
+        <div class="flex items-center gap-1">
+            <div class="h-3 w-3 rounded-sm bg-slate-200"></div>
+            <span>Pending</span>
+        </div>
+        <div class="flex items-center gap-1">
+            <div class="h-3 w-3 rounded-sm bg-amber-500"></div>
+            <span>Late</span>
+        </div>
+        <div class="flex items-center gap-1">
+            <div class="h-3 w-3 rounded-sm bg-red-500"></div>
+            <span>Missed</span>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter] public List<InstallmentDto> Installments { get; set; } = [];
+
+    private static string GetBlockColor(string status) => status switch
+    {
+        "Paid" => "bg-green-500 text-white",
+        "PartiallyPaid" => "bg-blue-400 text-white",
+        "Pending" => "bg-slate-200 text-slate-500",
+        "Late" => "bg-amber-500 text-white",
+        "Missed" => "bg-red-500 text-white",
+        _ => "bg-slate-100 text-slate-400"
+    };
+}

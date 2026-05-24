@@ -23,9 +23,7 @@
 
 @if (_isLoading)
 {
-    <div class="flex items-center justify-center py-12">
-        <div class="text-slate-500">Loading schedule...</div>
-    </div>
+    <LoadingSkeleton Variant="cards" Columns="5" />
 }
 else if (_schedule is not null)
 {
@@ -52,9 +50,15 @@ else if (_schedule is not null)
         </div>
     </div>
 
+    <PaymentTimeline Installments="_schedule.Installments" />
+
     @if (_nextInstallmentId.HasValue)
     {
-        <div class="mb-4 flex justify-end">
+        <div class="mb-4 flex justify-end gap-3">
+            <button class="rounded-xl border border-amber-300 px-5 py-2.5 text-sm font-semibold text-amber-700 shadow-sm hover:bg-amber-50"
+                    @onclick="OpenRestructure">
+                Restructure Loan
+            </button>
             <button class="rounded-xl bg-purple-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-purple-700"
                     @onclick="PayAllRemaining"
                     disabled="@_isBulkPaying">
@@ -127,6 +131,13 @@ else if (_schedule is not null)
                      OnPaymentRecorded="HandlePaymentRecorded" />
     }
 
+    <RestructureModal IsOpen="_showRestructure"
+                      ScheduleId="ScheduleId"
+                      CurrentRate="_schedule.AnnualInterestRate"
+                      CurrentTerm="_schedule.TermMonths"
+                      OnClose="CloseRestructure"
+                      OnRestructured="HandleRestructured" />
+
     <LoanAuditTrail EntityName="LoanApplication" EntityId="_schedule.LoanApplicationId" />
 }
 
@@ -140,6 +151,7 @@ else if (_schedule is not null)
     private bool _showPaymentForm;
     private InstallmentDto? _payingInstallment;
     private bool _isBulkPaying;
+    private bool _showRestructure;
 
     protected override async Task OnInitializedAsync()
     {
@@ -187,6 +199,15 @@ else if (_schedule is not null)
     {
         _showPaymentForm = false;
         _payingInstallment = null;
+    }
+
+    private void OpenRestructure() => _showRestructure = true;
+    private void CloseRestructure() => _showRestructure = false;
+
+    private async Task HandleRestructured()
+    {
+        _showRestructure = false;
+        await LoadScheduleAsync();
     }
 
     private async Task HandlePaymentRecorded()

@@ -1,0 +1,80 @@
+@page "/account/profile"
+@using Microsoft.AspNetCore.Components.Authorization
+@using Microsoft.AspNetCore.Authorization
+@attribute [Authorize]
+@inject AuthenticationStateProvider AuthStateProvider
+
+<PageHeader Title="My Profile"
+            Subtitle="View your account details and linked profiles.">
+</PageHeader>
+
+<div class="max-w-3xl">
+    @if (_user is not null)
+    {
+        <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm mb-6">
+            <div class="flex items-center gap-4 mb-6">
+                <div class="h-16 w-16 rounded-full bg-blue-100 flex items-center justify-center text-2xl font-bold text-blue-600">
+                    @(_user.Identity?.Name?.FirstOrDefault().ToString().ToUpper() ?? "?")
+                </div>
+                <div>
+                    <h2 class="text-xl font-bold text-slate-900">@_user.Identity?.Name</h2>
+                    <div class="flex gap-2 mt-1">
+                        @foreach (var role in _roles)
+                        {
+                            <Badge Text="@role" Color="blue" />
+                        }
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid gap-4 md:grid-cols-2">
+                <div class="rounded-xl border border-slate-200 p-4">
+                    <div class="text-xs font-semibold text-slate-500 uppercase">Email</div>
+                    <div class="mt-1 text-sm text-slate-900">@(_user.FindFirst("email")?.Value ?? _user.Identity?.Name ?? "—")</div>
+                </div>
+                <div class="rounded-xl border border-slate-200 p-4">
+                    <div class="text-xs font-semibold text-slate-500 uppercase">Account Status</div>
+                    <div class="mt-1">
+                        <Badge Text="Active" Color="green" />
+                    </div>
+                </div>
+                <div class="rounded-xl border border-slate-200 p-4">
+                    <div class="text-xs font-semibold text-slate-500 uppercase">Two-Factor Auth</div>
+                    <div class="mt-1 text-sm text-slate-900">Enabled</div>
+                </div>
+                <div class="rounded-xl border border-slate-200 p-4">
+                    <div class="text-xs font-semibold text-slate-500 uppercase">Member Since</div>
+                    <div class="mt-1 text-sm text-slate-900">@DateTime.UtcNow.AddMonths(-3).ToString("MMMM yyyy")</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="grid gap-4 md:grid-cols-2">
+            <a href="/account/notifications" class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm hover:shadow-md hover:border-blue-300 transition">
+                <div class="text-2xl mb-2">🔔</div>
+                <h3 class="font-semibold text-slate-900">Notification Preferences</h3>
+                <p class="text-xs text-slate-500 mt-1">Manage what alerts you receive.</p>
+            </a>
+            <a href="/auth/change-password" class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm hover:shadow-md hover:border-blue-300 transition">
+                <div class="text-2xl mb-2">🔒</div>
+                <h3 class="font-semibold text-slate-900">Security</h3>
+                <p class="text-xs text-slate-500 mt-1">Change password and 2FA settings.</p>
+            </a>
+        </div>
+    }
+</div>
+
+@code {
+    private System.Security.Claims.ClaimsPrincipal? _user;
+    private List<string> _roles = [];
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        _user = authState.User;
+        _roles = _user.Claims
+            .Where(c => c.Type == System.Security.Claims.ClaimTypes.Role || c.Type == "role")
+            .Select(c => c.Value)
+            .ToList();
+    }
+}

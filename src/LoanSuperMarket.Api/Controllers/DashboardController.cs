@@ -71,6 +71,16 @@ public sealed class DashboardController : ControllerBase
         return Ok(result);
     }
 
+    [HttpGet("lender/analytics")]
+    public async Task<ActionResult<ApiResponse<InvestorAnalyticsDto>>> GetInvestorAnalytics(
+        CancellationToken cancellationToken)
+    {
+        var result = await _sender.Send(
+            new Application.Features.Dashboard.GetInvestorAnalytics.GetInvestorAnalyticsQuery(),
+            cancellationToken);
+        return Ok(result);
+    }
+
     [HttpGet("borrower/loans")]
     public async Task<ActionResult<ApiResponse<IReadOnlyList<BorrowerLoanDto>>>> GetBorrowerLoans(
         CancellationToken cancellationToken)
@@ -99,5 +109,33 @@ public sealed class DashboardController : ControllerBase
         return Ok(ApiResponse<IReadOnlyList<AuditLogDto>>.Ok(
             logs,
             "Audit trail retrieved successfully."));
+    }
+
+    [HttpGet("admin/loans")]
+    [Authorize(Roles = "Admin")]
+    public async Task<ActionResult<ApiResponse<AdminLoansOverviewDto>>> GetAdminLoansOverview(
+        [FromQuery] string? performance,
+        [FromQuery] string? lender,
+        CancellationToken cancellationToken)
+    {
+        var query = new Application.Features.Dashboard.GetAdminLoansOverview.GetAdminLoansOverviewQuery
+        {
+            PerformanceFilter = performance,
+            LenderFilter = lender
+        };
+
+        var result = await _sender.Send(query, cancellationToken);
+        return Ok(result);
+    }
+
+    [HttpGet("admin/collections")]
+    [Authorize(Roles = "Admin")]
+    public async Task<ActionResult<ApiResponse<IReadOnlyList<CollectionItemDto>>>> GetCollections(
+        CancellationToken cancellationToken)
+    {
+        var result = await _sender.Send(
+            new Application.Features.Dashboard.GetCollections.GetCollectionsQuery(),
+            cancellationToken);
+        return Ok(result);
     }
 }

@@ -1,0 +1,59 @@
+@implements IDisposable
+
+<span class="@CssClass">@_prefix@_displayValue.ToString(Format)@_suffix</span>
+
+@code {
+    [Parameter] public decimal TargetValue { get; set; }
+    [Parameter] public string Format { get; set; } = "N0";
+    [Parameter] public string Prefix { get; set; } = "";
+    [Parameter] public string Suffix { get; set; } = "";
+    [Parameter] public string CssClass { get; set; } = "";
+    [Parameter] public int DurationMs { get; set; } = 800;
+
+    private decimal _displayValue;
+    private string _prefix = "";
+    private string _suffix = "";
+    private Timer? _timer;
+    private decimal _increment;
+    private int _steps;
+    private int _currentStep;
+
+    protected override void OnParametersSet()
+    {
+        _prefix = Prefix;
+        _suffix = Suffix;
+        StartAnimation();
+    }
+
+    private void StartAnimation()
+    {
+        _timer?.Dispose();
+        _currentStep = 0;
+        _steps = 20;
+        _increment = TargetValue / _steps;
+        _displayValue = 0;
+
+        _timer = new Timer(Tick, null, 0, DurationMs / _steps);
+    }
+
+    private void Tick(object? state)
+    {
+        _currentStep++;
+        if (_currentStep >= _steps)
+        {
+            _displayValue = TargetValue;
+            _timer?.Dispose();
+        }
+        else
+        {
+            _displayValue = _increment * _currentStep;
+        }
+
+        InvokeAsync(StateHasChanged);
+    }
+
+    public void Dispose()
+    {
+        _timer?.Dispose();
+    }
+}

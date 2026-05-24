@@ -1,0 +1,53 @@
+@* Simple CSS conic-gradient donut chart *@
+
+<div class="flex items-center gap-4">
+    <div class="relative h-24 w-24 flex-shrink-0">
+        <div class="h-24 w-24 rounded-full"
+             style="background: conic-gradient(@GetGradient());">
+        </div>
+        <div class="absolute inset-3 rounded-full bg-white flex items-center justify-center">
+            <span class="text-sm font-bold text-slate-900">@CenterText</span>
+        </div>
+    </div>
+
+    @if (ShowLegend)
+    {
+        <div class="space-y-1">
+            @foreach (var segment in Segments)
+            {
+                <div class="flex items-center gap-2 text-xs">
+                    <div class="h-2.5 w-2.5 rounded-full @segment.Color"></div>
+                    <span class="text-slate-600">@segment.Label</span>
+                    <span class="font-medium text-slate-900">@segment.Value.ToString("N0")</span>
+                </div>
+            }
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter] public List<DonutSegment> Segments { get; set; } = [];
+    [Parameter] public string CenterText { get; set; } = string.Empty;
+    [Parameter] public bool ShowLegend { get; set; } = true;
+
+    private string GetGradient()
+    {
+        if (Segments.Count == 0) return "#e2e8f0 0deg 360deg";
+
+        var total = Segments.Sum(s => s.Value);
+        if (total == 0) return "#e2e8f0 0deg 360deg";
+
+        var parts = new List<string>();
+        var currentDeg = 0m;
+
+        foreach (var segment in Segments)
+        {
+            var degrees = segment.Value / total * 360;
+            var cssColor = segment.CssColor ?? "#3b82f6";
+            parts.Add($"{cssColor} {currentDeg:F1}deg {(currentDeg + degrees):F1}deg");
+            currentDeg += degrees;
+        }
+
+        return string.Join(", ", parts);
+    }
+}

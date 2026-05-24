@@ -1,0 +1,20 @@
+@* Reusable empty state with icon, title, message, and optional action *@
+
+<div class="flex flex-col items-center justify-center py-16 text-center">
+    <div class="text-5xl mb-4">@Icon</div>
+    <h3 class="text-lg font-semibold text-slate-700">@Title</h3>
+    <p class="mt-1 text-sm text-slate-500 max-w-sm">@Message</p>
+    @if (ActionContent is not null)
+    {
+        <div class="mt-6">
+            @ActionContent
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter] public string Icon { get; set; } = "📭";
+    [Parameter] public string Title { get; set; } = "Nothing here yet";
+    [Parameter] public string Message { get; set; } = "No data to display.";
+    [Parameter] public RenderFragment? ActionContent { get; set; }
+}

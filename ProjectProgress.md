@@ -1,523 +1,207 @@
-# projectprogress.md
+# Project Progress — Loan Investment Supermarket
 
-```md
-# LoanSuperMarketUsingBlazor — Project Progress Report
+## What Are We Building?
 
-## Project Vision
+A peer-to-peer lending marketplace. Think of it like a stock exchange, but for loans. Lenders put up capital, borrowers apply for loans, and the platform matches them, handles the money flow, tracks repayments, and manages the entire lifecycle.
 
-The purpose of this project is to build a modern enterprise-grade financial services platform using:
-
-- ASP.NET Core
-- Blazor
-- Clean Architecture
-- CQRS + MediatR
-- EF Core
-- Azure-ready architecture
-- Reusable UI infrastructure
-- Enterprise operational UX patterns
-
-The project is intentionally being designed to demonstrate senior/lead-level frontend and full-stack engineering capabilities, particularly around:
-
-- scalable Blazor architecture,
-- reusable component systems,
-- operational SaaS UX,
-- enterprise data workflows,
-- frontend/backend integration patterns,
-- and maintainable large-scale UI systems.
-
-This platform is evolving toward the type of architecture commonly seen in:
-- lending platforms,
-- insurance platforms,
-- operational fintech dashboards,
-- underwriting systems,
-- and enterprise SaaS products.
+It's not a demo or a tutorial — it's a production-grade financial platform built with enterprise architecture patterns.
 
 ---
 
-# Current Architecture Status
+## What's Working Right Now
 
-The solution now contains a strong foundational enterprise architecture across:
+### The Full Lending Lifecycle
 
-## Backend
+A loan goes through this journey on our platform:
 
-- Clean Architecture layering
-- CQRS + MediatR
-- Repository abstraction pattern
-- Shared DTO contracts
-- Domain-driven modelling concepts
-- Value Objects
-- Application query handlers
-- Infrastructure repository implementations
-- REST API architecture
-
-## Frontend
-
-- Modular Blazor UI architecture
-- Reusable component-driven UI system
-- Shared operational workflows
-- Global notification infrastructure
-- Shared modal orchestration
-- Shared drawer orchestration
-- Reusable DataGrid infrastructure
-- Reusable form component system
-- Server-side grid query architecture
-- Enterprise operational UX patterns
-
----
-
-# Features Completed
-
----
-
-# 1. Enterprise DataGrid Infrastructure
-
-Implemented reusable enterprise-grade DataGrid infrastructure including:
-
-- reusable table shell,
-- reusable toolbar,
-- reusable paging,
-- reusable sorting,
-- reusable filtering,
-- shared grid state management.
-
-### Capabilities
-
-- column sorting,
-- search filtering,
-- status filtering,
-- paging,
-- reusable operational layouts,
-- consistent UX patterns.
-
-### Technical Areas Demonstrated
-
-- reusable frontend architecture,
-- component composition,
-- shared UI infrastructure,
-- scalable operational UI design.
-
----
-
-# 2. Reusable Modal Infrastructure
-
-Implemented centralized modal orchestration system.
-
-### Components Added
-
-- ModalService
-- ModalHost
-- confirmation dialog infrastructure
-- reusable modal patterns
-
-### Features
-
-- reusable confirmation dialogs,
-- workflow confirmations,
-- centralized modal state handling,
-- layout-level orchestration.
-
-### Enterprise Value
-
-Demonstrates:
-- scalable UI orchestration,
-- shared infrastructure,
-- operational workflow UX,
-- enterprise frontend architecture.
-
----
-
-# 3. Toast Notification Infrastructure
-
-Implemented reusable notification infrastructure.
-
-### Features
-
-- success notifications,
-- error notifications,
-- warning notifications,
-- info notifications,
-- animated transitions,
-- auto-dismiss behaviour.
-
-### Technical Focus
-
-- global UI state handling,
-- reactive UI updates,
-- reusable operational feedback system.
-
----
-
-# 4. Reusable Enterprise Form Component System
-
-Implemented reusable form controls to standardize operational forms across the application.
-
-### Components Added
-
-- AppTextInput
-- AppNumberInput
-- AppTextArea
-- AppDateInput
-- FormSection
-- FormActions
-
-### Benefits
-
-- consistent UX,
-- reduced duplicated Tailwind markup,
-- centralized styling,
-- maintainable form architecture.
-
-### Refactored Workflows
-
-- borrower creation,
-- lender creation,
-- loan application submission.
-
----
-
-# 5. Enterprise Drawer Infrastructure
-
-Implemented reusable right-side detail drawer system.
-
-### Components Added
-
-- DrawerService
-- DrawerHost
-- reusable drawer workflows
-
-### Features
-
-- slide-out detail panels,
-- context-preserving operational workflows,
-- reusable quick-view UX,
-- overlay interactions,
-- animated transitions.
-
-### Current Usage
-
-- borrower quick view,
-- lender quick view,
-- loan application quick view.
-
-### Enterprise Value
-
-This demonstrates:
-- advanced frontend UX patterns,
-- dynamic rendering,
-- enterprise operational workflow design,
-- non-disruptive navigation patterns.
-
----
-
-# 6. Loan Product Workflow Infrastructure
-
-Implemented operational workflows for loan products including:
-
-- submit for approval,
-- approve,
-- publish,
-- archive.
-
-### UX Features
-
-- workflow confirmations,
-- loading states,
-- notifications,
-- operational actions.
-
-### Architectural Focus
-
-- reusable workflow orchestration,
-- async UI handling,
-- operational workflow management.
-
----
-
-# 7. Server-Side Grid Query Architecture
-
-Implemented enterprise server-side query infrastructure.
-
-### Shared Contracts
-
-- GridQueryRequest
-- SortDirection
-- shared PagedResult usage
-
-### Features
-
-- server-side filtering,
-- server-side sorting,
-- server-side paging,
-- DTO projection,
-- total record tracking,
-- reactive grid reloads.
-
-### Modules Completed
-
-- Loan Products
-- Borrowers
-- Lenders
-
-### Technical Value
-
-This demonstrates:
-- scalability thinking,
-- enterprise data handling,
-- frontend/backend coordination,
-- API query contract design,
-- performance-focused architecture.
-
----
-
-# 8. Blazor Frontend Architecture Evolution
-
-The frontend architecture has evolved significantly toward enterprise standards.
-
-### Current Frontend Characteristics
-
-- reusable component composition,
-- infrastructure-driven UI architecture,
-- shared operational patterns,
-- scalable page structure,
-- reusable workflows,
-- centralized orchestration systems.
-
-### Current Enterprise UX Patterns
-
-- modal workflows,
-- quick-view drawers,
-- operational grids,
-- reusable filtering,
-- reusable sorting,
-- reusable paging,
-- centralized notifications.
-
----
-
-# 9. Operational SaaS UX Improvements
-
-The project now resembles a modern operational SaaS platform rather than a basic CRUD application.
-
-### Current UX Characteristics
-
-- workflow-driven UI,
-- operational dashboards,
-- fast user interactions,
-- non-disruptive navigation,
-- contextual workflows,
-- reusable operational tooling.
-
----
-
-# Technical Skills Demonstrated So Far
-
-## Frontend
-
-- Blazor component architecture
-- reusable UI systems
-- state-driven rendering
-- shared infrastructure
-- Tailwind-based enterprise UI design
-- operational workflow UX
-- asynchronous UI handling
-
-## Backend
-
-- Clean Architecture
-- CQRS + MediatR
-- repository abstraction
-- EF Core query optimization patterns
-- server-side query handling
-- DTO projection
-- API contract design
-
-## Architecture
-
-- separation of concerns
-- modular system design
-- scalable frontend/backend coordination
-- reusable infrastructure patterns
-- operational SaaS design principles
-
----
-
-# Current Application Modules
-
-## Borrowers
-- creation workflows
-- server-side grid
-- quick-view drawer
-- filtering/sorting/paging
-- notifications
-
-## Lenders
-- creation workflows
-- server-side grid
-- quick-view drawer
-- filtering/sorting/paging
-- notifications
-
-## Loan Products
-- workflow lifecycle management
-- server-side grid
-- filtering/sorting/paging
-- operational actions
-- reusable workflows
-
-## Loan Applications
-- submission workflows
-- operational review UX
-- quick-view drawers
-- notifications
-
----
-
-# Challenges Solved During Development
-
-Several realistic enterprise-level engineering problems were encountered and resolved.
-
-### Examples
-
-- Blazor rendering lifecycle issues
-- modal orchestration problems
-- toast rendering and UI threading issues
-- generic component typing issues
-- Value Object mapping issues
-- Clean Architecture dependency violations
-- duplicate shared DTO conflicts
-- repository abstraction alignment
-- server-side paging contract design
-- frontend/backend synchronization issues
-
-These challenges significantly strengthened the architecture quality and overall engineering maturity of the solution.
-
----
-
-# Next 5 Planned Steps
-
----
-
-# 1. Real-Time Operational Updates
-
-Introduce SignalR-based real-time operational updates.
-
-### Planned Features
-
-- live grid refresh,
-- workflow notifications,
-- operational activity feed,
-- live status updates.
-
-### Enterprise Value
-
-Demonstrates:
-- real-time SaaS architecture,
-- operational monitoring UX,
-- scalable event-driven frontend design.
-
----
-
-# 2. Dashboard Widget Infrastructure
-
-Build reusable operational dashboard widgets.
-
-### Planned Widgets
-
-- KPI cards,
-- operational metrics,
-- workflow summaries,
-- recent activity panels,
-- approval queues.
-
-### Technical Focus
-
-- reusable dashboard infrastructure,
-- responsive operational layouts,
-- reusable analytics components.
-
----
-
-# 3. Advanced Loan Product Detail Pages
-
-Expand loan product detail pages into enterprise operational workspaces.
-
-### Planned Features
-
-- workflow timeline,
-- audit trail,
-- lender associations,
-- application relationships,
-- operational notes,
-- document placeholders.
-
-### Enterprise Value
-
-Demonstrates:
-- complex UI composition,
-- operational workflow orchestration,
-- advanced detail page architecture.
-
----
-
-# 4. Authentication & Role-Based Authorization
-
-Introduce enterprise security patterns.
-
-### Planned Features
-
-- JWT authentication,
-- role-based authorization,
-- operational permissions,
-- admin roles,
-- protected workflows.
-
-### Technical Value
-
-Demonstrates:
-- enterprise security architecture,
-- operational access control,
-- production-ready SaaS patterns.
-
----
-
-# 5. Azure & DevOps Readiness
-
-Prepare the solution for enterprise deployment workflows.
-
-### Planned Areas
-
-- CI/CD pipelines,
-- Docker support,
-- Azure App Services deployment,
-- environment configuration,
-- logging & monitoring,
-- Application Insights integration.
-
-### Enterprise Value
-
-Demonstrates:
-- deployment architecture,
-- DevOps readiness,
-- production operational support patterns.
-
----
-
-# Overall Project Direction
-
-The project is steadily evolving from a standard CRUD application into a modern enterprise operational financial platform.
-
-The architecture now strongly reflects:
-- scalable frontend engineering,
-- enterprise operational UX,
-- reusable infrastructure,
-- clean backend design,
-- and performance-oriented SaaS application patterns.
-
-The current direction is intentionally aligned with the type of engineering standards expected from:
-- Senior Frontend Engineers,
-- Senior Full Stack Engineers,
-- Lead Engineers,
-- and Frontend/Platform Architects.
-
----
 ```
+Borrower applies → CRM reviews → Approved → Lender funds it → Monthly repayments → Loan complete
+```
+
+Every step of that is implemented, end to end, across backend and frontend.
+
+### For Borrowers
+- Apply for loans through a guided wizard
+- Get matched with suitable loan products
+- Upload documents for verification
+- View active loans with progress bars
+- Make payments (single or pay-off-entire-loan)
+- See payment history and upcoming schedule
+- Get warnings when payments are due soon
+
+### For Lenders
+- Browse a funding queue of approved applications
+- See borrower credit tier, amount, rate, and purpose
+- Accept funding (auto-generates amortization schedule, deducts capital)
+- Decline with reason
+- Top up capital when funds run low
+- Restructure distressed loans (extend term, adjust rate)
+- View portfolio: active loans, earnings, default rate
+- Investor analytics: ROI per loan, annualized yield, diversification score
+
+### For Admins
+- Platform-wide loan overview across all lenders
+- Filter by performance status or lender
+- See default rates, outstanding principal, total funded
+- Drill into any loan's repayment schedule
+- User management and vetting queue
+
+### The Engine Under the Hood
+- **Amortization calculator** — EMI formula with rounding correction
+- **Payment processor** — enforces sequential payment order, handles partial/full/bulk payments
+- **Late payment detection** — background service runs daily, applies late fees after grace period
+- **Default detection** — 3+ consecutive missed = defaulted, notifications sent
+- **Credit tier rate adjustment** — Tier A (base), B (+2%), C (+4%)
+- **Audit trail** — every funding, payment, restructuring logged with timestamps
+
+---
+
+## Tech Stack
+
+| Layer | Technology |
+|-------|-----------|
+| Backend API | ASP.NET Core 10 |
+| Architecture | Clean Architecture + CQRS + MediatR |
+| Database | SQL Server + EF Core |
+| Auth | ASP.NET Identity + JWT + 2FA |
+| Real-time | SignalR |
+| Frontend | Blazor WebAssembly |
+| Styling | Tailwind CSS |
+| Validation | FluentValidation + DataAnnotations |
+
+---
+
+## Architecture Decisions
+
+- **Domain-Driven Design** — entities have behaviour, not just data. State machines protect invariants.
+- **CQRS** — commands change state, queries read it. Never mixed.
+- **Pipeline behaviours** — validation, logging, limit enforcement, resource authorization all happen automatically in the MediatR pipeline.
+- **Resource-scoped queries** — lenders only see their loans, borrowers only see theirs. Enforced at the query level.
+- **Background processing** — late payment detection runs on a timer, not triggered by user actions.
+- **Layered validation** — domain guards → FluentValidation → API model validation → Blazor form validation.
+
+---
+
+## What We Built (Chronological)
+
+### Phase 1 — Foundation
+- Clean Architecture solution structure
+- Domain entities: LoanProduct, Borrower, Lender, LoanApplication
+- Value Objects: Money, InterestRate
+- CQRS handlers for all CRUD operations
+- EF Core persistence with full configurations
+- JWT authentication with refresh tokens
+- Role-based authorization (Admin, Lender, Borrower, CrmManager)
+- Permission system with module/action granularity
+
+### Phase 2 — Operational Workflows
+- Loan product lifecycle: Draft → PendingApproval → Approved → Published → Archived
+- Application workflow: Draft → Submitted → UnderReview → Approved/Rejected → Funded
+- Document upload and verification
+- Review queue for CRM managers
+- Application wizard for borrowers
+- Product matching engine
+
+### Phase 3 — Enterprise Frontend
+- Reusable DataGrid infrastructure (sort, filter, page, search)
+- Modal orchestration system
+- Toast notification infrastructure
+- Drawer quick-view panels
+- Reusable form components
+- Server-side grid queries
+- Dashboard with KPI metrics
+
+### Phase 4 — Funding & Repayment Engine (Current)
+- Funding queue with filters and capital display
+- Funding decision modal (accept/decline)
+- Amortization schedule generation (EMI formula)
+- Installment state machine (Pending → Paid/Late/Missed)
+- Payment processing (single, partial, bulk/early payoff)
+- Late payment background service with grace period
+- Default detection (3+ consecutive missed)
+- Notification hooks (stub — ready for email/SMS)
+- Lender dashboard: portfolio, loans, earnings, analytics
+- Borrower dashboard: active loans, payment history, upcoming payments
+- Lender capital top-up
+- Loan restructuring for distressed loans
+- Investor analytics: ROI, yield, diversification score
+- Admin operations panel: platform-wide loan monitoring
+- CSV export of repayment schedules
+- SignalR real-time notifications infrastructure
+- Audit trail timeline on loan pages
+- Development data seeder for demo/testing
+
+---
+
+## What's Next
+
+### Immediate (next sprint)
+- [ ] Wire SignalR client into Blazor pages (auto-refresh funding queue on events)
+- [ ] Email notifications via SendGrid (replace stub)
+- [ ] PDF export of repayment schedules (proper formatted document)
+- [ ] Restructuring UI on the repayment schedule page (lender action button)
+
+### Short-term
+- [ ] Loan performance charts (line chart of payments over time)
+- [ ] Lender comparison view (which products perform best)
+- [ ] Borrower credit score simulation (what-if scenarios)
+- [ ] Notification preferences (email/SMS/in-app toggles)
+- [ ] Mobile-responsive layout polish
+
+### Medium-term
+- [ ] Secondary market — lenders can sell loan positions to other lenders
+- [ ] Auto-invest rules — lenders set criteria, platform auto-funds matching loans
+- [ ] Collections workflow — structured process for defaulted loans
+- [ ] Regulatory reporting — generate compliance reports
+- [ ] Multi-currency support
+
+### Infrastructure
+- [ ] Azure deployment (App Services + SQL Azure)
+- [ ] CI/CD pipeline (GitHub Actions)
+- [ ] Application Insights + structured logging
+- [ ] Load testing
+- [ ] Property-based testing for amortization invariants
+
+---
+
+## Key Metrics (Code)
+
+| Metric | Count |
+|--------|-------|
+| Domain entities | 8 |
+| CQRS handlers | 25+ |
+| API controllers | 10 |
+| Blazor pages | 12 |
+| Blazor components | 20+ |
+| FluentValidation validators | 8 |
+| Pipeline behaviours | 6 |
+| Background services | 1 |
+| SignalR hubs | 1 |
+
+---
+
+## How to Run It
+
+```bash
+# Backend
+cd src/LoanSuperMarket.Api
+dotnet run
+
+# Frontend (separate terminal)
+cd src/LoanSuperMarket.Blazor
+dotnet run
+```
+
+Default admin: `admin@loansupermarket.com` / `Admin@123456!`
+
+The dev seeder auto-creates sample lenders, borrowers, products, and a funded loan on first run.
+
+---
+
+## The Philosophy
+
+We build features end-to-end. Every feature touches all layers — domain logic, application handlers, API endpoints, and Blazor UI. We don't leave half-built backends without frontends or vice versa.
+
+We prioritise correctness over speed. State machines protect invariants. Sequential payment enforcement prevents data corruption. Validation happens at every layer.
+
+We build for the next developer. Clean separation, consistent patterns, typed contracts between layers. If you understand one feature, you understand them all.
