@@ -1,8 +1,17 @@
 @page "/repayment-schedule/{ScheduleId:guid}"
+@using Microsoft.AspNetCore.Authorization
+@attribute [Authorize]
 @inject PaymentsApiClient PaymentsApiClient
+@inject ToastService ToastService
 
 <PageHeader Title="Repayment Schedule"
             Subtitle="View installment details and make payments.">
+    <ActionContent>
+        <a href="@($"api/payments/{ScheduleId}/export")" target="_blank"
+           class="rounded-xl border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm hover:bg-slate-50">
+            📥 Export CSV
+        </a>
+    </ActionContent>
 </PageHeader>
 
 @if (!string.IsNullOrWhiteSpace(_errorMessage))
@@ -42,6 +51,17 @@ else if (_schedule is not null)
             <div class="mt-2 text-lg font-bold text-slate-900">£@_schedule.TotalInterestPayable.ToString("N2")</div>
         </div>
     </div>
+
+    @if (_nextInstallmentId.HasValue)
+    {
+        <div class="mb-4 flex justify-end">
+            <button class="rounded-xl bg-purple-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-purple-700"
+                    @onclick="PayAllRemaining"
+                    disabled="@_isBulkPaying">
+                @(_isBulkPaying ? "Processing..." : "Pay All Remaining")
+            </button>
+        </div>
+    }
 
     <div class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
         <table class="w-full text-sm">
@@ -106,6 +126,8 @@ else if (_schedule is not null)
                      OnClose="ClosePaymentForm"
                      OnPaymentRecorded="HandlePaymentRecorded" />
     }
+
+    <LoanAuditTrail EntityName="LoanApplication" EntityId="_schedule.LoanApplicationId" />
 }
 
 @code {
@@ -117,6 +139,7 @@ else if (_schedule is not null)
     private string? _errorMessage;
     private bool _showPaymentForm;
     private InstallmentDto? _payingInstallment;
+    private bool _isBulkPaying;
 
     protected override async Task OnInitializedAsync()
     {
@@ -170,6 +193,50 @@ else if (_schedule is not null)
     {
         _showPaymentForm = false;
         _payingInstallment = null;
+        ToastService.ShowSuccess("Payment", "Payment recorded successfully!");
         await LoadScheduleAsync();
+    }
+
+    private async Task PayAllRemaining()
+    {
+        if (_schedule is null) return;
+
+        _isBulkPaying = true;
+        try
+        {
+            var remaining = _schedule.Installments
+                .Where(i => i.Status is "Pending" or "PartiallyPaid" or "Late" or "Missed")
+                .Sum(i => i.TotalAmount + i.LateFeeAmount - i.PaidAmount);
+
+            if (remaining <= 0)
+            {
+                ToastService.ShowInfo("Complete", "All installments are already paid.");
+                return;
+            }
+
+            var response = await PaymentsApiClient.RecordBulkPaymentAsync(
+                ScheduleId, remaining, DateTime.UtcNow);
+
+            if (response?.Success == true)
+            {
+                var data = response.Data;
+                ToastService.ShowSuccess("Paid Off",
+                    $"{data?.InstallmentsPaid} installment(s) paid. Loan fully settled!");
+                await LoadScheduleAsync();
+            }
+            else
+            {
+                ToastService.ShowError("Error",
+                    response?.Errors.FirstOrDefault() ?? "Bulk payment failed.");
+            }
+        }
+        catch (Exception ex)
+        {
+            ToastService.ShowError("Error", ex.Message);
+        }
+        finally
+        {
+            _isBulkPaying = false;
+        }
     }
 }

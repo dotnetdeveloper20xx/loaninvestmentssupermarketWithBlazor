@@ -1,4 +1,6 @@
 @inject DashboardApiClient DashboardApiClient
+@inject FundingApiClient FundingApiClient
+@inject ToastService ToastService
 
 @if (_portfolio is not null)
 {
@@ -25,22 +27,44 @@
                 @_portfolio.DefaultRate.ToString("N1")%
             </div>
         </div>
-        <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-            <div class="text-xs font-semibold text-slate-500 uppercase">Available Funds</div>
+        <div class="rounded-2xl border border-blue-200 bg-blue-50 p-5 shadow-sm cursor-pointer hover:bg-blue-100 transition"
+             @onclick="OpenTopUp">
+            <div class="text-xs font-semibold text-blue-600 uppercase">Available Funds</div>
             <div class="mt-2 text-lg font-bold text-blue-700">£@_portfolio.AvailableFunds.ToString("N0")</div>
+            <div class="mt-1 text-xs text-blue-500">Click to top up</div>
         </div>
     </div>
+
+    <TopUpFundsModal IsOpen="_showTopUp"
+                     CurrentBalance="_portfolio.AvailableFunds"
+                     OnClose="CloseTopUp"
+                     OnTopUpComplete="HandleTopUpComplete" />
 }
 
 @code {
     private LenderPortfolioDto? _portfolio;
+    private bool _showTopUp;
 
     protected override async Task OnInitializedAsync()
+    {
+        await LoadPortfolioAsync();
+    }
+
+    private async Task LoadPortfolioAsync()
     {
         var response = await DashboardApiClient.GetLenderPortfolioAsync();
         if (response?.Success == true)
         {
             _portfolio = response.Data;
         }
+    }
+
+    private void OpenTopUp() => _showTopUp = true;
+    private void CloseTopUp() => _showTopUp = false;
+
+    private async Task HandleTopUpComplete(decimal newBalance)
+    {
+        _showTopUp = false;
+        await LoadPortfolioAsync();
     }
 }

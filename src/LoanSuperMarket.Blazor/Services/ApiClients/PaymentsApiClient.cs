@@ -51,4 +51,25 @@ public sealed class PaymentsApiClient
             $"api/payments/{scheduleId}/history",
             cancellationToken);
     }
+
+    public async Task<ApiResponse<BulkPaymentResultDto>?> RecordBulkPaymentAsync(
+        Guid scheduleId,
+        decimal amount,
+        DateTime paymentDate,
+        CancellationToken cancellationToken = default)
+    {
+        var request = new RecordPaymentRequest
+        {
+            Amount = amount,
+            PaymentDate = paymentDate
+        };
+
+        var response = await _httpClient.PostAsJsonAsync(
+            $"api/payments/{scheduleId}/pay-bulk",
+            request,
+            cancellationToken);
+
+        return await response.Content.ReadFromJsonAsync<ApiResponse<BulkPaymentResultDto>>(
+            cancellationToken);
+    }
 }

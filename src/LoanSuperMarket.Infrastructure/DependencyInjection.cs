@@ -82,6 +82,10 @@ public static class DependencyInjection
         services.AddScoped<IDocumentStorageService, StubDocumentStorageService>();
         services.AddScoped<ProductMatchingService>();
 
+        // User & Role query services
+        services.AddScoped<IUserQueryService, UserQueryService>();
+        services.AddScoped<IRoleQueryService, RoleQueryService>();
+
         // Funding & Repayment Engine services
         services.AddScoped<IAmortizationService, AmortizationService>();
         services.AddScoped<IPaymentProcessor, PaymentProcessor>();

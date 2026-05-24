@@ -24,9 +24,8 @@ public sealed class GetLenderDashboardQueryHandler
         GetLenderDashboardQuery request,
         CancellationToken cancellationToken)
     {
-        // Get lender by user ID
-        var lenders = await _lenderRepository.GetAllAsync(cancellationToken);
-        var lender = lenders.FirstOrDefault(l => l.UserId == request.FilterByUserId);
+        var lender = await _lenderRepository.GetByUserIdAsync(
+            request.FilterByUserId!, cancellationToken);
 
         if (lender is null)
         {

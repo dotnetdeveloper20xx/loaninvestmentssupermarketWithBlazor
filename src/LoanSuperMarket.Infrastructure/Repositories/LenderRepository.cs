@@ -27,6 +27,11 @@ public sealed class LenderRepository : ILenderRepository
         return await _context.Lenders.FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
     }
 
+    public async Task<Lender?> GetByUserIdAsync(string userId, CancellationToken cancellationToken)
+    {
+        return await _context.Lenders.FirstOrDefaultAsync(x => x.UserId == userId, cancellationToken);
+    }
+
     public async Task<IReadOnlyList<Lender>> GetAllAsync(CancellationToken cancellationToken)
     {
         return await _context.Lenders

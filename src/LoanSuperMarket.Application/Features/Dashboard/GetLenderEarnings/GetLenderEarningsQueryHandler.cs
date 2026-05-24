@@ -24,8 +24,8 @@ public sealed class GetLenderEarningsQueryHandler
         GetLenderEarningsQuery request,
         CancellationToken cancellationToken)
     {
-        var lenders = await _lenderRepository.GetAllAsync(cancellationToken);
-        var lender = lenders.FirstOrDefault(l => l.UserId == request.FilterByUserId);
+        var lender = await _lenderRepository.GetByUserIdAsync(
+            request.FilterByUserId!, cancellationToken);
 
         if (lender is null)
         {

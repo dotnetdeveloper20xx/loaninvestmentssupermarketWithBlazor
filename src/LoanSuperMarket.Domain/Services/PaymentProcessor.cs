@@ -43,4 +43,41 @@ public sealed class PaymentProcessor : IPaymentProcessor
 
         schedule.UpdatePerformance();
     }
+
+    public int RecordBulkPayment(RepaymentSchedule schedule, decimal totalAmount, DateTime paymentDate)
+    {
+        if (totalAmount <= 0)
+        {
+            throw new DomainException("Payment amount must be greater than zero.");
+        }
+
+        var remaining = totalAmount;
+        var installmentsPaid = 0;
+
+        while (remaining > 0)
+        {
+            var nextInstallment = schedule.GetNextPendingInstallment();
+            if (nextInstallment is null)
+            {
+                break; // All installments paid off
+            }
+
+            var owed = nextInstallment.TotalAmount + nextInstallment.LateFeeAmount - nextInstallment.PaidAmount;
+
+            if (remaining >= owed)
+            {
+                nextInstallment.RecordFullPayment(paymentDate);
+                remaining -= owed;
+                installmentsPaid++;
+            }
+            else
+            {
+                nextInstallment.RecordPartialPayment(remaining, paymentDate);
+                remaining = 0;
+            }
+        }
+
+        schedule.UpdatePerformance();
+        return installmentsPaid;
+    }
 }

@@ -1,0 +1,98 @@
+@inject FundingApiClient FundingApiClient
+@inject ToastService ToastService
+
+@if (IsOpen)
+{
+    <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+        <div class="w-full max-w-md rounded-2xl bg-white p-8 shadow-xl">
+            <div class="flex items-center justify-between mb-6">
+                <h2 class="text-xl font-bold text-slate-900">Top Up Funds</h2>
+                <button class="text-slate-400 hover:text-slate-600" @onclick="Close">✕</button>
+            </div>
+
+            <div class="mb-4 rounded-xl border border-blue-200 bg-blue-50 p-4">
+                <div class="text-xs font-semibold text-blue-700 uppercase">Current Balance</div>
+                <div class="mt-1 text-lg font-bold text-blue-900">£@CurrentBalance.ToString("N2")</div>
+            </div>
+
+            @if (!string.IsNullOrWhiteSpace(_error))
+            {
+                <div class="mb-4 rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+                    @_error
+                </div>
+            }
+
+            <div class="mb-6">
+                <label class="block text-sm font-medium text-slate-700 mb-1">Amount (£)</label>
+                <input type="number" step="0.01" min="1" @bind="_amount"
+                       class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                       placeholder="Enter amount to add..." />
+            </div>
+
+            <div class="flex justify-end gap-3">
+                <button class="rounded-xl border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+                        @onclick="Close">
+                    Cancel
+                </button>
+                <button class="rounded-xl bg-green-600 px-4 py-2 text-sm font-semibold text-white hover:bg-green-700"
+                        @onclick="SubmitTopUp"
+                        disabled="@_isProcessing">
+                    @(_isProcessing ? "Processing..." : "Top Up")
+                </button>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public bool IsOpen { get; set; }
+    [Parameter] public decimal CurrentBalance { get; set; }
+    [Parameter] public EventCallback OnClose { get; set; }
+    [Parameter] public EventCallback<decimal> OnTopUpComplete { get; set; }
+
+    private decimal _amount;
+    private bool _isProcessing;
+    private string? _error;
+
+    private void Close()
+    {
+        _error = null;
+        _amount = 0;
+        OnClose.InvokeAsync();
+    }
+
+    private async Task SubmitTopUp()
+    {
+        _error = null;
+
+        if (_amount <= 0)
+        {
+            _error = "Please enter an amount greater than zero.";
+            return;
+        }
+
+        _isProcessing = true;
+        try
+        {
+            var response = await FundingApiClient.TopUpFundsAsync(_amount);
+            if (response?.Success == true)
+            {
+                ToastService.ShowSuccess("Top Up", $"£{_amount:N2} added successfully!");
+                await OnTopUpComplete.InvokeAsync(response.Data);
+                _amount = 0;
+            }
+            else
+            {
+                _error = response?.Errors.FirstOrDefault() ?? "Top-up failed.";
+            }
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+        }
+        finally
+        {
+            _isProcessing = false;
+        }
+    }
+}

@@ -1,4 +1,6 @@
 @page "/lender-dashboard"
+@using Microsoft.AspNetCore.Authorization
+@attribute [Authorize(Roles = "Lender,Admin")]
 
 <PageHeader Title="Lender Dashboard"
             Subtitle="Monitor your lending portfolio, funded loans, and earnings.">

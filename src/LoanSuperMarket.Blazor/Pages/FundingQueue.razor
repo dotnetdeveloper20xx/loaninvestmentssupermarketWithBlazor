@@ -1,10 +1,24 @@
 @page "/funding-queue"
+@using Microsoft.AspNetCore.Authorization
+@attribute [Authorize(Roles = "Lender,Admin")]
 @inject FundingApiClient FundingApiClient
+@inject DashboardApiClient DashboardApiClient
 @inject NavigationManager Navigation
+@inject ToastService ToastService
 
 <PageHeader Title="Funding Queue"
             Subtitle="Review and fund approved loan applications from your product portfolio.">
 </PageHeader>
+
+@if (_availableFunds.HasValue)
+{
+    <div class="mb-6 rounded-2xl border border-blue-200 bg-blue-50 p-4 flex items-center justify-between">
+        <div>
+            <span class="text-sm font-medium text-blue-700">Available Capital:</span>
+            <span class="ml-2 text-lg font-bold text-blue-900">£@_availableFunds.Value.ToString("N0")</span>
+        </div>
+    </div>
+}
 
 @if (!string.IsNullOrWhiteSpace(_errorMessage))
 {
@@ -123,10 +137,26 @@ else
     private decimal? _minAmount;
     private decimal? _maxAmount;
     private Guid? _selectedApplicationId;
+    private decimal? _availableFunds;
 
     protected override async Task OnInitializedAsync()
     {
+        await LoadBalanceAsync();
         await LoadQueueAsync();
+    }
+
+    private async Task LoadBalanceAsync()
+    {
+        try
+        {
+            var response = await DashboardApiClient.GetLenderPortfolioAsync();
+            if (response?.Success == true && response.Data is not null)
+            {
+                _availableFunds = response.Data.AvailableFunds;
+                _noCapital = _availableFunds <= 0;
+            }
+        }
+        catch { /* non-critical */ }
     }
 
     private async Task LoadQueueAsync()
@@ -178,12 +208,15 @@ else
     private async Task HandleFunded()
     {
         _selectedApplicationId = null;
+        ToastService.ShowSuccess("Funded", "Loan funded successfully!");
+        await LoadBalanceAsync();
         await LoadQueueAsync();
     }
 
     private async Task HandleDeclined()
     {
         _selectedApplicationId = null;
+        ToastService.ShowInfo("Declined", "Funding declined.");
         await LoadQueueAsync();
     }
 }

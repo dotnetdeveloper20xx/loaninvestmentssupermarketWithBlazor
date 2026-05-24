@@ -4,6 +4,7 @@ using LoanSuperMarket.Application;
 using LoanSuperMarket.Application.Common.Interfaces;
 using LoanSuperMarket.Infrastructure;
 using LoanSuperMarket.Infrastructure.Identity;
+using LoanSuperMarket.Infrastructure.Persistence;
 using LoanSuperMarket.Shared.Configuration;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
@@ -104,6 +105,8 @@ builder.Services.AddAuthorization(options =>
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+builder.Services.AddSignalR();
+builder.Services.AddScoped<LoanSuperMarket.Application.Common.Interfaces.IRealTimeNotifier, LoanSuperMarket.Api.Services.SignalRNotifier>();
 
 // ---------------------------------------------------------------------------
 // Application & Infrastructure DI (Identity, DbContexts, repositories, etc.)
@@ -123,6 +126,7 @@ var app = builder.Build();
 // Seed Identity roles and default Admin account
 // ---------------------------------------------------------------------------
 await IdentitySeeder.SeedAsync(app.Services);
+await DevelopmentDataSeeder.SeedAsync(app.Services);
 
 // ---------------------------------------------------------------------------
 // Middleware pipeline (order matters)
@@ -144,6 +148,7 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
+app.MapHub<LoanSuperMarket.Api.Hubs.LoanHub>("/hubs/loans");
 
 app.Run();
 

@@ -1,0 +1,85 @@
+@using LoanSuperMarket.Shared.Audit
+@inject DashboardApiClient DashboardApiClient
+
+<div class="mt-6">
+    <h3 class="text-lg font-semibold text-slate-900 mb-4">Activity Timeline</h3>
+
+    @if (_isLoading)
+    {
+        <div class="py-4 text-center text-sm text-slate-500">Loading activity...</div>
+    }
+    else if (_logs.Count == 0)
+    {
+        <div class="py-4 text-center text-sm text-slate-500">No activity recorded yet.</div>
+    }
+    else
+    {
+        <div class="space-y-0">
+            @foreach (var log in _logs)
+            {
+                <div class="relative flex gap-4 pb-6">
+                    <div class="flex flex-col items-center">
+                        <div class="h-3 w-3 rounded-full @GetDotColor(log.Action)"></div>
+                        @if (log != _logs.Last())
+                        {
+                            <div class="w-0.5 flex-1 bg-slate-200"></div>
+                        }
+                    </div>
+                    <div class="flex-1 pb-2">
+                        <div class="flex items-center justify-between">
+                            <span class="text-sm font-medium text-slate-900">@log.Action</span>
+                            <span class="text-xs text-slate-400">@log.OccurredAtUtc.ToLocalTime().ToString("dd MMM yyyy HH:mm")</span>
+                        </div>
+                        <p class="mt-0.5 text-sm text-slate-600">@log.Description</p>
+                        <p class="mt-0.5 text-xs text-slate-400">by @log.PerformedBy</p>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter] public string EntityName { get; set; } = string.Empty;
+    [Parameter] public Guid EntityId { get; set; }
+
+    private List<AuditLogDto> _logs = [];
+    private bool _isLoading = true;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (EntityId != Guid.Empty && !string.IsNullOrWhiteSpace(EntityName))
+        {
+            await LoadAuditTrailAsync();
+        }
+    }
+
+    private async Task LoadAuditTrailAsync()
+    {
+        _isLoading = true;
+        try
+        {
+            var response = await DashboardApiClient.GetAuditTrailAsync(EntityName, EntityId);
+            if (response?.Success == true)
+            {
+                _logs = response.Data?.ToList() ?? [];
+            }
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private static string GetDotColor(string action) => action switch
+    {
+        "Funded" => "bg-green-500",
+        "FundingDeclined" => "bg-red-500",
+        "FundsTopUp" => "bg-blue-500",
+        "Approved" => "bg-emerald-500",
+        "Rejected" => "bg-red-500",
+        "LateFeeApplied" => "bg-amber-500",
+        "DefaultDetected" => "bg-red-600",
+        _ => "bg-slate-400"
+    };
+}

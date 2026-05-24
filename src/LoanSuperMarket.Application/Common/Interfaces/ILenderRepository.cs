@@ -11,6 +11,8 @@ public interface ILenderRepository
 
     Task<Lender?> GetByIdAsync(Guid id, CancellationToken cancellationToken);
 
+    Task<Lender?> GetByUserIdAsync(string userId, CancellationToken cancellationToken);
+
     Task<IReadOnlyList<Lender>> GetAllAsync(CancellationToken cancellationToken);
 
     Task<bool> EmailExistsAsync(string email, CancellationToken cancellationToken);

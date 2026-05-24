@@ -77,4 +77,18 @@ public sealed class FundingApiClient
         return await response.Content.ReadFromJsonAsync<ApiResponse<string>>(
             cancellationToken);
     }
+
+    public async Task<ApiResponse<decimal>?> TopUpFundsAsync(
+        decimal amount,
+        CancellationToken cancellationToken = default)
+    {
+        var request = new TopUpFundsRequest { Amount = amount };
+        var response = await _httpClient.PostAsJsonAsync(
+            "api/funding/top-up",
+            request,
+            cancellationToken);
+
+        return await response.Content.ReadFromJsonAsync<ApiResponse<decimal>>(
+            cancellationToken);
+    }
 }

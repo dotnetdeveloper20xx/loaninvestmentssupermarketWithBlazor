@@ -70,6 +70,9 @@ public sealed class RepaymentScheduleConfiguration : IEntityTypeConfiguration<Re
             .HasForeignKey(x => x.RepaymentScheduleId)
             .OnDelete(DeleteBehavior.Cascade);
 
+        builder.Navigation(x => x.Installments)
+            .UsePropertyAccessMode(PropertyAccessMode.Field);
+
         builder.HasIndex(x => x.LoanApplicationId);
         builder.HasIndex(x => x.LenderId);
         builder.HasIndex(x => x.Performance);

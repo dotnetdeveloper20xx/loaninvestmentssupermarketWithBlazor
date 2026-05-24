@@ -1,4 +1,5 @@
 using System.Net.Http.Json;
+using LoanSuperMarket.Shared.Audit;
 using LoanSuperMarket.Shared.Common;
 using LoanSuperMarket.Shared.Dashboard;
 
@@ -69,6 +70,16 @@ public sealed class DashboardApiClient
     {
         return await _httpClient.GetFromJsonAsync<ApiResponse<BorrowerPaymentSummaryDto>>(
             "api/dashboard/borrower/upcoming",
+            cancellationToken);
+    }
+
+    public async Task<ApiResponse<IReadOnlyList<AuditLogDto>>?> GetAuditTrailAsync(
+        string entityName,
+        Guid entityId,
+        CancellationToken cancellationToken = default)
+    {
+        return await _httpClient.GetFromJsonAsync<ApiResponse<IReadOnlyList<AuditLogDto>>>(
+            $"api/dashboard/audit/{entityName}/{entityId}",
             cancellationToken);
     }
 }

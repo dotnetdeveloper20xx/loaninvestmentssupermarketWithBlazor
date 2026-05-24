@@ -1,3 +1,4 @@
+using LoanSuperMarket.Application.Common.Interfaces;
 using LoanSuperMarket.Application.Features.Funding.DeclineFunding;
 using LoanSuperMarket.Application.Features.Funding.FundLoan;
 using LoanSuperMarket.Application.Features.Funding.GetFundingApplicationDetails;
@@ -16,10 +17,17 @@ namespace LoanSuperMarket.Api.Controllers;
 public sealed class FundingController : ControllerBase
 {
     private readonly ISender _sender;
+    private readonly ICurrentUserService _currentUserService;
+    private readonly ILenderRepository _lenderRepository;
 
-    public FundingController(ISender sender)
+    public FundingController(
+        ISender sender,
+        ICurrentUserService currentUserService,
+        ILenderRepository lenderRepository)
     {
         _sender = sender;
+        _currentUserService = currentUserService;
+        _lenderRepository = lenderRepository;
     }
 
     [HttpGet("queue")]
@@ -55,16 +63,17 @@ public sealed class FundingController : ControllerBase
     [HttpPost("{applicationId:guid}/accept")]
     public async Task<ActionResult<ApiResponse<FundingResultDto>>> AcceptFunding(
         Guid applicationId,
-        [FromBody] AcceptFundingRequest request,
         CancellationToken cancellationToken)
     {
-        // LenderId would come from the current user's lender profile in production
-        // For now, we'll need it from the request context
         var lenderId = await GetCurrentLenderIdAsync(cancellationToken);
+        if (lenderId is null)
+        {
+            return Ok(ApiResponse<FundingResultDto>.Fail(
+                "No lender profile found for the current user."));
+        }
 
-        var command = new FundLoanCommand(applicationId, lenderId);
+        var command = new FundLoanCommand(applicationId, lenderId.Value);
         var result = await _sender.Send(command, cancellationToken);
-
         return Ok(result);
     }
 
@@ -75,21 +84,43 @@ public sealed class FundingController : ControllerBase
         CancellationToken cancellationToken)
     {
         var lenderId = await GetCurrentLenderIdAsync(cancellationToken);
+        if (lenderId is null)
+        {
+            return Ok(ApiResponse<string>.Fail(
+                "No lender profile found for the current user."));
+        }
 
-        var command = new DeclineFundingCommand(applicationId, lenderId, request.Reason);
+        var command = new DeclineFundingCommand(applicationId, lenderId.Value, request.Reason);
         var result = await _sender.Send(command, cancellationToken);
-
         return Ok(result);
     }
 
-    /// <summary>
-    /// Placeholder for resolving the current user's lender ID.
-    /// In production, this would use ICurrentUserService to resolve the lender profile.
-    /// </summary>
-    private Task<Guid> GetCurrentLenderIdAsync(CancellationToken cancellationToken)
+    [HttpPost("top-up")]
+    public async Task<ActionResult<ApiResponse<decimal>>> TopUpFunds(
+        [FromBody] TopUpFundsRequest request,
+        CancellationToken cancellationToken)
     {
-        // This would be resolved from the authenticated user's claims/profile
-        // For now, return empty — the handler will validate
-        return Task.FromResult(Guid.Empty);
+        var lenderId = await GetCurrentLenderIdAsync(cancellationToken);
+        if (lenderId is null)
+        {
+            return Ok(ApiResponse<decimal>.Fail(
+                "No lender profile found for the current user."));
+        }
+
+        var command = new Application.Features.Funding.TopUpFunds.TopUpFundsCommand(
+            lenderId.Value, request.Amount);
+        var result = await _sender.Send(command, cancellationToken);
+        return Ok(result);
+    }
+
+    private async Task<Guid?> GetCurrentLenderIdAsync(CancellationToken cancellationToken)
+    {
+        if (!_currentUserService.IsAuthenticated || string.IsNullOrEmpty(_currentUserService.UserId))
+            return null;
+
+        var lender = await _lenderRepository.GetByUserIdAsync(
+            _currentUserService.UserId, cancellationToken);
+
+        return lender?.Id;
     }
 }

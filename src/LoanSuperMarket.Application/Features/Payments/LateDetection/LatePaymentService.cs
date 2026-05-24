@@ -219,12 +219,6 @@ public sealed class LatePaymentService
     private async Task<IReadOnlyList<Domain.Entities.RepaymentSchedule>> GetAllActiveSchedulesAsync(
         CancellationToken cancellationToken)
     {
-        // For now, get all non-defaulted schedules. In production, this would be optimized
-        // with a dedicated repository method that filters at the DB level.
-        var lenderSchedules = await _repository.GetSchedulesByLenderIdAsync(Guid.Empty, cancellationToken);
-
-        // Fallback: use the DbContext directly via a dedicated method
-        // For this implementation, we'll rely on the hosted service providing all schedules
-        return lenderSchedules;
+        return await _repository.GetAllActiveSchedulesAsync(cancellationToken);
     }
 }

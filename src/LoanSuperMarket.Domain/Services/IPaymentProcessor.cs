@@ -12,4 +12,10 @@ public interface IPaymentProcessor
     /// Records a payment against the next pending installment in the schedule.
     /// </summary>
     void RecordPayment(RepaymentSchedule schedule, decimal amount, DateTime paymentDate);
+
+    /// <summary>
+    /// Records a bulk payment that pays off multiple installments sequentially.
+    /// Returns the number of installments fully paid.
+    /// </summary>
+    int RecordBulkPayment(RepaymentSchedule schedule, decimal totalAmount, DateTime paymentDate);
 }

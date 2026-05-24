@@ -37,6 +37,10 @@ public sealed class BorrowerConfiguration : IEntityTypeConfiguration<Borrower>
             .HasDefaultValue(BorrowerStatus.PendingVerification)
             .IsRequired();
 
+        builder.Property(x => x.CreditTier)
+            .HasConversion<int?>()
+            .IsRequired(false);
+
         builder.Property(x => x.CreatedAtUtc)
             .IsRequired();
 

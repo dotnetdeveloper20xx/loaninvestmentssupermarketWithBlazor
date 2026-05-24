@@ -17,6 +17,7 @@ public sealed class FundLoanCommandHandler
     private readonly IBorrowerRepository _borrowerRepository;
     private readonly IAmortizationService _amortizationService;
     private readonly IAuditLogRepository _auditLogRepository;
+    private readonly IRealTimeNotifier _realTimeNotifier;
 
     public FundLoanCommandHandler(
         ILenderRepository lenderRepository,
@@ -24,7 +25,8 @@ public sealed class FundLoanCommandHandler
         ILoanProductRepository loanProductRepository,
         IBorrowerRepository borrowerRepository,
         IAmortizationService amortizationService,
-        IAuditLogRepository auditLogRepository)
+        IAuditLogRepository auditLogRepository,
+        IRealTimeNotifier realTimeNotifier)
     {
         _lenderRepository = lenderRepository;
         _loanApplicationRepository = loanApplicationRepository;
@@ -32,6 +34,7 @@ public sealed class FundLoanCommandHandler
         _borrowerRepository = borrowerRepository;
         _amortizationService = amortizationService;
         _auditLogRepository = auditLogRepository;
+        _realTimeNotifier = realTimeNotifier;
     }
 
     public async Task<ApiResponse<FundingResultDto>> Handle(
@@ -101,6 +104,14 @@ public sealed class FundLoanCommandHandler
             cancellationToken);
 
         await _lenderRepository.SaveChangesAsync(cancellationToken);
+
+        // Push real-time notifications
+        await _realTimeNotifier.NotifyFundingQueueChangedAsync(cancellationToken);
+        if (borrower?.UserId is not null)
+        {
+            await _realTimeNotifier.NotifyLoanFundedAsync(
+                borrower.UserId, application.Id, fundingAmount, cancellationToken);
+        }
 
         return ApiResponse<FundingResultDto>.Ok(new FundingResultDto
         {

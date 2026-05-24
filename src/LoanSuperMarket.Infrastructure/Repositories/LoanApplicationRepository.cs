@@ -240,4 +240,12 @@ public sealed class LoanApplicationRepository : ILoanApplicationRepository
             .OrderByDescending(s => s.GeneratedAtUtc)
             .ToListAsync(cancellationToken);
     }
+
+    public async Task<IReadOnlyList<RepaymentSchedule>> GetAllActiveSchedulesAsync(CancellationToken cancellationToken)
+    {
+        return await _context.RepaymentSchedules
+            .Include(s => s.Installments)
+            .Where(s => s.Performance != Domain.Enums.LoanPerformance.Defaulted)
+            .ToListAsync(cancellationToken);
+    }
 }

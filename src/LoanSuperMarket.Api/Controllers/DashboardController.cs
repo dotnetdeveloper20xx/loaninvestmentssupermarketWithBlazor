@@ -1,9 +1,11 @@
+using LoanSuperMarket.Application.Common.Interfaces;
 using LoanSuperMarket.Application.Features.Dashboard;
 using LoanSuperMarket.Application.Features.Dashboard.GetBorrowerLoans;
 using LoanSuperMarket.Application.Features.Dashboard.GetBorrowerPaymentSummary;
 using LoanSuperMarket.Application.Features.Dashboard.GetLenderDashboard;
 using LoanSuperMarket.Application.Features.Dashboard.GetLenderEarnings;
 using LoanSuperMarket.Application.Features.Dashboard.GetLenderLoans;
+using LoanSuperMarket.Shared.Audit;
 using LoanSuperMarket.Shared.Common;
 using LoanSuperMarket.Shared.Dashboard;
 using MediatR;
@@ -83,5 +85,19 @@ public sealed class DashboardController : ControllerBase
     {
         var result = await _sender.Send(new GetBorrowerPaymentSummaryQuery(), cancellationToken);
         return Ok(result);
+    }
+
+    [HttpGet("audit/{entityName}/{entityId:guid}")]
+    public async Task<ActionResult<ApiResponse<IReadOnlyList<AuditLogDto>>>> GetAuditTrail(
+        string entityName,
+        Guid entityId,
+        CancellationToken cancellationToken)
+    {
+        var auditLogRepository = HttpContext.RequestServices.GetRequiredService<IAuditLogRepository>();
+        var logs = await auditLogRepository.GetByEntityAsync(entityName, entityId, cancellationToken);
+
+        return Ok(ApiResponse<IReadOnlyList<AuditLogDto>>.Ok(
+            logs,
+            "Audit trail retrieved successfully."));
     }
 }

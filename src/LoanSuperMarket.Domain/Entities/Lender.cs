@@ -130,4 +130,15 @@ public sealed class Lender : AuditableEntity
         AvailableFunds -= amount;
         MarkUpdated();
     }
+
+    public void TopUpFunds(decimal amount)
+    {
+        if (amount <= 0)
+        {
+            throw new DomainException("Top-up amount must be greater than zero.");
+        }
+
+        AvailableFunds += amount;
+        MarkUpdated();
+    }
 }

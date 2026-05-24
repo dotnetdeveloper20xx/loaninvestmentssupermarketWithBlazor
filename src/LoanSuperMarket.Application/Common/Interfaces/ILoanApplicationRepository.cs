@@ -59,5 +59,10 @@ public interface ILoanApplicationRepository
     Task<IReadOnlyList<RepaymentSchedule>> GetSchedulesByBorrowerIdAsync(
         Guid borrowerId, CancellationToken cancellationToken);
 
+    /// <summary>
+    /// Gets all active (non-defaulted) repayment schedules for background processing.
+    /// </summary>
+    Task<IReadOnlyList<RepaymentSchedule>> GetAllActiveSchedulesAsync(CancellationToken cancellationToken);
+
     Task SaveChangesAsync(CancellationToken cancellationToken);
 }
