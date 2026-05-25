@@ -13,10 +13,10 @@ The assistant should then read the key files referenced below to rebuild context
 
 - **Name:** Loan Investment Supermarket
 - **Type:** Peer-to-peer lending marketplace
-- **Stack:** ASP.NET Core 10, Blazor WASM, EF Core, SQL Server, MediatR, Tailwind CSS
+- **Stack:** ASP.NET Core 10, Blazor WASM, EF Core, SQL Server, MediatR, Tailwind CSS + DaisyUI (Corporate theme)
 - **Architecture:** Clean Architecture + CQRS + DDD
 - **Solution file:** `LoanSuperMarketUsingBlazor.slnx`
-- **Database:** `(localdb)\MSSQLLocalDB` → `LoanSuperMarketDb`
+- **Database:** `Server=DESKTOP-VVJN96B;Database=LoanSuperMarketDb`
 
 ---
 
@@ -37,13 +37,13 @@ tests/
 └── LoanSuperMarket.Api.Tests/
 
 docs/                               ← 11 comprehensive documentation files
+onboarding/                         ← 34 deep-dive feature guides for developers
+LoanSuperMarketScreens/            ← Screenshots (admin/, borrowers/, lenders/)
 ```
 
 ---
 
 ## Key Files to Read for Context
-
-If you need to understand the project quickly, read these:
 
 | Purpose | File |
 |---------|------|
@@ -57,7 +57,24 @@ If you need to understand the project quickly, read these:
 | Blazor DI | `src/LoanSuperMarket.Blazor/Program.cs` |
 | Database context | `src/LoanSuperMarket.Infrastructure/Persistence/ApplicationDbContext.cs` |
 | Test data | `src/LoanSuperMarket.Infrastructure/Persistence/DevelopmentDataSeeder.cs` |
-| Tasks spec | `.kiro/specs/lender-funding-repayment/tasks.md` |
+| Identity seeder | `src/LoanSuperMarket.Infrastructure/Identity/IdentitySeeder.cs` |
+| JWT token service | `src/LoanSuperMarket.Infrastructure/Identity/JwtTokenService.cs` |
+| Tailwind config | `src/LoanSuperMarket.Blazor/tailwind.config.js` |
+
+---
+
+## Demo Accounts (All Seeded on First Startup)
+
+| Role | Email | Password |
+|------|-------|----------|
+| Admin | `admin@loansupermarket.com` | `Admin@123456!` |
+| Admin | `admin2@demo.com` | `Demo@12345!` |
+| CRM Manager | `crm1@demo.com` | `Demo@12345!` |
+| CRM Manager | `crm2@demo.com` | `Demo@12345!` |
+| Customer Service | `staff1@demo.com` | `Demo@12345!` |
+| Customer Service | `staff2@demo.com` | `Demo@12345!` |
+| Lender | `lender1@demo.com` - `lender5@demo.com` | `Demo@12345!` |
+| Borrower | `borrower1@demo.com` - `borrower5@demo.com` | `Demo@12345!` |
 
 ---
 
@@ -73,12 +90,15 @@ If you need to understand the project quickly, read these:
 - Loan restructuring for distressed loans
 
 ### Dashboards
+- Admin: KPI cards, conversion metrics, recent applications, quick actions, new borrowers
 - Lender: Portfolio, Loans, Earnings, Analytics (ROI/yield/diversification), Product Comparison
 - Borrower: Applications, Active Loans, Payment History, Upcoming Payments, Calculator
-- Admin: Platform-wide loans, Collections
 
 ### Infrastructure
-- JWT auth with refresh tokens, 2FA, role-based policies
+- JWT auth with refresh tokens, token rotation, reuse detection
+- AddIdentityCore (NOT AddIdentity — prevents cookie scheme override)
+- MapInboundClaims=false, RoleClaimType="role", OnTokenValidated identity fix
+- 6 roles with granular module-level permissions
 - SignalR real-time notifications (hub + client connected)
 - Background hosted service for daily late payment processing
 - Stored procedures + Dapper for reporting
@@ -89,10 +109,10 @@ If you need to understand the project quickly, read these:
 - Domain events (MediatR INotification)
 - Specification pattern
 - 30+ reusable Blazor components
-- Dark mode toggle
+- DaisyUI Corporate theme
 - CSV export
 - Error boundary
-- Development data seeder
+- Development data seeder (comprehensive: 5 lenders, 5 borrowers, 20 products, 15 applications, 6 funded loans)
 
 ### Testing
 - 30 unit tests (Domain + Application)
@@ -101,16 +121,58 @@ If you need to understand the project quickly, read these:
 
 ### Documentation
 - 11 comprehensive docs in `docs/` folder
-- Covers: business, users, architecture, domain, application, database, frontend, API, testing, troubleshooting, patterns
+- 34 deep-dive onboarding documents in `onboarding/` folder
+- Professional README with embedded screenshots
+- Screenshots in `LoanSuperMarketScreens/` (admin, borrowers, lenders)
+
+---
+
+## Critical Technical Decisions (Don't Change These)
+
+### JWT Authentication Setup
+```
+- Uses AddIdentityCore (NOT AddIdentity) to prevent cookie scheme override
+- Token generation: claims use "role" claim type
+- ClaimsIdentity created with: new ClaimsIdentity(claims, "jwt", "email", "role")
+- OutboundClaimTypeMap.Clear() on JwtSecurityTokenHandler
+- API validation: MapInboundClaims = false, RoleClaimType = "role"
+- OnTokenValidated event re-creates ClaimsIdentity with correct role type
+```
+
+### DashboardController Authorization
+```
+- Class-level: [Authorize] (just requires authentication)
+- Per-endpoint: [Authorize(Roles = "...")] for specific role access
+- Lender endpoints: "Lender,Admin"
+- Borrower endpoints: "Borrower,Admin"
+- Admin endpoints: "Admin"
+```
+
+### Registration Flow
+```
+- Email auto-confirmed (no email provider configured)
+- Account status set to Active immediately (no vetting in dev mode)
+- Borrower/Lender entities linked to Identity users via UserId
+```
+
+### Seeder Dependency Order
+```
+1. Users (Identity) → SaveChanges
+2. Lenders + Borrowers → SaveChanges
+3. Link UserId to Lenders/Borrowers → SaveChanges
+4. Loan Products → SaveChanges
+5. Loan Applications → SaveChanges
+6. Repayment Schedules + Payments → SaveChanges
+7. Audit Logs → SaveChanges
+```
 
 ---
 
 ## What's NOT Done Yet (Roadmap)
 
 ### High Priority
-- [ ] Deploy stored procedures to database (run the .sql files)
 - [ ] Wire SignalR events into Blazor pages (auto-refresh on FundingQueueChanged)
-- [ ] Email notifications via SendGrid (replace StubNotificationService)
+- [ ] Email notifications via SendGrid (replace NoOpEmailService)
 - [ ] API versioning attributes on controllers
 - [ ] Integration tests with WebApplicationFactory
 
@@ -138,7 +200,7 @@ If you need to understand the project quickly, read these:
 2. **Dashboard handlers** for lender earnings/analytics iterate schedules in memory. Could use stored procedures for better performance at scale.
 3. **Notification preferences** are not persisted to a database table — currently just logged. Needs a `NotificationPreferences` table.
 4. **Collections page** queries all lenders then all their schedules. Needs a dedicated optimized query.
-5. **The `NavMenu.razor` was deleted** — `MainLayout.razor` has its own sidebar. If any code references `NavMenu`, it will fail.
+5. **Tailwind CSS** must be rebuilt manually after adding new utility classes: `npx tailwindcss -i wwwroot/css/tailwind-input.css -o wwwroot/css/app.css` (from Blazor project folder).
 
 ---
 
@@ -167,22 +229,42 @@ cd src/LoanSuperMarket.Blazor
 dotnet run
 ```
 
-Default admin: `admin@loansupermarket.com` / `Admin@123456!`
+**API:** `https://localhost:7117` (Swagger at `/swagger`)
+**Blazor:** `http://localhost:5036`
 
-The `DevelopmentDataSeeder` runs on first startup and creates sample data.
+The `DevelopmentDataSeeder` runs on first startup and creates all demo data.
+
+### If You Need to Reset the Database:
+```bash
+cd C:\Users\afzal\source\repos\LoanSuperMarketUsingBlazor
+dotnet ef database drop --project src\LoanSuperMarket.Infrastructure --startup-project src\LoanSuperMarket.Api --context ApplicationDbContext --force
+dotnet ef database drop --project src\LoanSuperMarket.Infrastructure --startup-project src\LoanSuperMarket.Api --context AuthIdentityDbContext --force
+dotnet ef database update --project src\LoanSuperMarket.Infrastructure --startup-project src\LoanSuperMarket.Api --context ApplicationDbContext
+dotnet ef database update --project src\LoanSuperMarket.Infrastructure --startup-project src\LoanSuperMarket.Api --context AuthIdentityDbContext
+```
+
+### If You Need to Rebuild Tailwind CSS:
+```bash
+cd src\LoanSuperMarket.Blazor
+npx tailwindcss -i wwwroot/css/tailwind-input.css -o wwwroot/css/app.css
+```
 
 ---
 
 ## Last Session Summary
 
 In the most recent session we:
-1. Implemented the complete Lender Funding & Repayment Engine (all 15 task groups)
-2. Fixed all compilation errors
-3. Created and applied database migration
-4. Added capital top-up, bulk repayment, loan restructuring
-5. Added SignalR hub + client, CSV export, audit trail
-6. Added investor analytics, admin panel, collections workflow
-7. Polish sprint: professional NavMenu, landing page, loading skeletons, charts, dark mode, FAQ, profile
-8. Added enterprise patterns: unit tests, stored procedures + Dapper, domain events, caching, error boundary, health checks, rate limiting, specification pattern, correlation IDs, virtualization
-9. Created comprehensive 11-document technical bible in `docs/`
-10. Verified the complete lending lifecycle is implemented end-to-end with zero gaps
+1. Fixed JWT authentication (AddIdentityCore, role claim mapping, OnTokenValidated)
+2. Fixed DashboardController authorization (per-endpoint roles instead of restrictive policy)
+3. Created 5 missing pages (Payments, Disputes, Messages, Notifications, AuditLogs)
+4. Fixed nav menu roles and broken links
+5. Fixed Swagger error (WizardController IFormFile)
+6. Switched to DaisyUI Corporate theme
+7. Redesigned Admin Dashboard with KPI cards, metrics, activity feed
+8. Fixed DevelopmentDataSeeder (CreateDraft flow, dependency ordering, user linking)
+9. Auto-confirm email and auto-activate accounts on registration
+10. Fixed Blazor file upload (buffer stream before StateHasChanged)
+11. Fixed wizard state (carry data to Review step)
+12. Created comprehensive seeder (5 lenders, 5 borrowers, 20 products, 15 apps, 6 funded)
+13. Rewrote README.md with screenshots and professional narrative
+14. Created 34 onboarding documents (~17,000+ lines of developer documentation)
