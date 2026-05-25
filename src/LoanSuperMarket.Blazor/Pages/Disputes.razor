@@ -1,0 +1,12 @@
+@page "/disputes"
+
+@using Microsoft.AspNetCore.Authorization
+@attribute [Authorize(Roles = "Admin,CustomerService")]
+
+<PageHeader Title="Disputes"
+            Subtitle="Manage and resolve borrower and lender disputes.">
+</PageHeader>
+
+<EmptyState Icon="⚖️"
+            Title="No active disputes"
+            Message="There are currently no open disputes requiring attention. Disputes will appear here when borrowers or lenders raise issues." />

@@ -94,9 +94,10 @@ public sealed class WizardController : ControllerBase
     }
 
     [HttpPost("{id:guid}/documents")]
+    [Consumes("multipart/form-data")]
     public async Task<ActionResult<ApiResponse<Guid>>> UploadDocument(
         Guid id,
-        [FromForm] IFormFile file,
+        IFormFile file,
         [FromForm] int documentType,
         CancellationToken cancellationToken)
     {

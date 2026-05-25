@@ -1,0 +1,12 @@
+@page "/messages"
+
+@using Microsoft.AspNetCore.Authorization
+@attribute [Authorize(Roles = "Admin,CustomerService")]
+
+<PageHeader Title="Messages"
+            Subtitle="Platform messaging and communication centre.">
+</PageHeader>
+
+<EmptyState Icon="💬"
+            Title="No messages"
+            Message="There are no messages in the queue. Messages from borrowers and lenders will appear here." />

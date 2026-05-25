@@ -31,7 +31,7 @@ public static class DevelopmentDataSeeder
 
         logger.LogInformation("Seeding development data...");
 
-        // --- Lenders ---
+        // --- Step 1: Create and save Lenders and Borrowers (no dependencies) ---
         var lender1 = Lender.Create("Apex Capital Partners", "James Richardson", "james@apexcapital.co.uk", "020 7946 0001", 500_000m);
         var lender2 = Lender.Create("Sterling Finance Group", "Sarah Mitchell", "sarah@sterlingfinance.co.uk", "020 7946 0002", 750_000m);
 
@@ -41,7 +41,6 @@ public static class DevelopmentDataSeeder
 
         await context.Lenders.AddRangeAsync(lender1, lender2);
 
-        // --- Borrowers ---
         var borrower1 = Borrower.Create("Michael", "Thompson", "michael.thompson@email.com", "07700 900001", new DateTime(1985, 3, 15));
         var borrower2 = Borrower.Create("Emma", "Williams", "emma.williams@email.com", "07700 900002", new DateTime(1990, 7, 22));
         var borrower3 = Borrower.Create("David", "Chen", "david.chen@email.com", "07700 900003", new DateTime(1988, 11, 8));
@@ -52,7 +51,11 @@ public static class DevelopmentDataSeeder
 
         await context.Borrowers.AddRangeAsync(borrower1, borrower2, borrower3);
 
-        // --- Loan Products ---
+        // SAVE to generate IDs for lenders and borrowers
+        await context.SaveChangesAsync();
+        logger.LogDebug("Saved lenders and borrowers.");
+
+        // --- Step 2: Create and save Loan Products (depends on Lender IDs) ---
         var product1 = LoanProduct.Create(
             "Personal Growth Loan",
             "Flexible personal loan for home improvements and major purchases.",
@@ -82,24 +85,32 @@ public static class DevelopmentDataSeeder
 
         await context.LoanProducts.AddRangeAsync(product1, product2, product3);
 
-        // --- Loan Applications (Approved, ready for funding) ---
-        var app1 = LoanApplication.Create(borrower1.Id, product1.Id, Money.Create(25_000m), 36, "Home renovation project");
+        // SAVE to generate IDs for products
+        await context.SaveChangesAsync();
+        logger.LogDebug("Saved loan products.");
+
+        // --- Step 3: Create and save Loan Applications (depends on Borrower and Product IDs) ---
+        var app1 = LoanApplication.CreateDraft(borrower1.Id, 25_000m, 36, "Home renovation project");
+        app1.SelectProduct(product1.Id);
         app1.Submit();
         app1.MarkUnderReview();
         app1.Approve("Good credit history, stable income.", "admin@loansupermarket.com");
 
-        var app2 = LoanApplication.Create(borrower2.Id, product2.Id, Money.Create(40_000m), 24, "Expanding online retail business");
+        var app2 = LoanApplication.CreateDraft(borrower2.Id, 40_000m, 24, "Expanding online retail business");
+        app2.SelectProduct(product2.Id);
         app2.Submit();
         app2.MarkUnderReview();
         app2.Approve("Strong business plan, existing revenue.", "admin@loansupermarket.com");
 
-        var app3 = LoanApplication.Create(borrower3.Id, product3.Id, Money.Create(8_000m), 12, "Emergency car repair");
+        var app3 = LoanApplication.CreateDraft(borrower3.Id, 8_000m, 12, "Emergency car repair");
+        app3.SelectProduct(product3.Id);
         app3.Submit();
         app3.MarkUnderReview();
         app3.Approve("Verified employment, low debt ratio.", "admin@loansupermarket.com");
 
         // --- One already funded application with schedule ---
-        var app4 = LoanApplication.Create(borrower1.Id, product2.Id, Money.Create(30_000m), 24, "Office equipment purchase");
+        var app4 = LoanApplication.CreateDraft(borrower1.Id, 30_000m, 24, "Office equipment purchase");
+        app4.SelectProduct(product2.Id);
         app4.Submit();
         app4.MarkUnderReview();
         app4.Approve("Repeat borrower, excellent history.", "admin@loansupermarket.com");
@@ -107,7 +118,11 @@ public static class DevelopmentDataSeeder
 
         await context.LoanApplications.AddRangeAsync(app1, app2, app3, app4);
 
-        // --- Generate repayment schedule for the funded loan ---
+        // SAVE to generate IDs for applications
+        await context.SaveChangesAsync();
+        logger.LogDebug("Saved loan applications.");
+
+        // --- Step 4: Generate repayment schedule (depends on Application and Lender IDs) ---
         var amortizationService = scope.ServiceProvider.GetRequiredService<IAmortizationService>();
         var effectiveRate = 12m + 2m; // Base 12% + Tier B adjustment
 
@@ -123,11 +138,14 @@ public static class DevelopmentDataSeeder
             installments[2].RecordFullPayment(DateTime.UtcNow.AddDays(-5));
         }
 
-        // Deduct from lender
+        // Deduct from lender (this modifies lender2 which is already tracked)
         lender2.DeductFunds(30_000m);
 
         await context.RepaymentSchedules.AddAsync(schedule);
+
+        // FINAL SAVE for schedule and lender balance update
         await context.SaveChangesAsync();
+        logger.LogDebug("Saved repayment schedule and updated lender balance.");
 
         logger.LogInformation(
             "Development data seeded: 2 lenders, 3 borrowers, 3 products, " +

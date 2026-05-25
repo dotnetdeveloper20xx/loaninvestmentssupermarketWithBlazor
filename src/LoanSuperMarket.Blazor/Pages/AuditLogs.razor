@@ -1,0 +1,12 @@
+@page "/audit-logs"
+
+@using Microsoft.AspNetCore.Authorization
+@attribute [Authorize(Roles = "Admin,Auditor")]
+
+<PageHeader Title="Audit Logs"
+            Subtitle="Platform-wide audit trail of all significant actions and changes.">
+</PageHeader>
+
+<EmptyState Icon="📋"
+            Title="No audit logs"
+            Message="Audit logs will appear here as users perform actions on the platform such as funding loans, approving applications, and managing accounts." />

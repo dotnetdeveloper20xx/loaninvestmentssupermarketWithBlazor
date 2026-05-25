@@ -60,6 +60,8 @@ builder.Services.AddAuthentication(options =>
 })
 .AddJwtBearer(options =>
 {
+    options.MapInboundClaims = false;
+
     options.TokenValidationParameters = new TokenValidationParameters
     {
         ValidateIssuer = true,
@@ -74,9 +76,8 @@ builder.Services.AddAuthentication(options =>
         ValidateIssuerSigningKey = true,
         IssuerSigningKey = signingKey,
 
-        // Map standard claims
         NameClaimType = "email",
-        RoleClaimType = "roles"
+        RoleClaimType = "role"
     };
 
     options.Events = new JwtBearerEvents
@@ -86,6 +87,22 @@ builder.Services.AddAuthentication(options =>
             if (context.Exception is SecurityTokenExpiredException)
             {
                 context.Response.Headers.Append("X-Token-Expired", "true");
+            }
+            return Task.CompletedTask;
+        },
+        OnTokenValidated = context =>
+        {
+            // Ensure the ClaimsIdentity uses "role" as the RoleClaimType
+            // This guarantees User.IsInRole() and [Authorize(Roles=...)] work correctly
+            if (context.Principal?.Identity is System.Security.Claims.ClaimsIdentity identity)
+            {
+                // Re-create identity with correct role claim type if needed
+                if (identity.RoleClaimType != "role")
+                {
+                    var newIdentity = new System.Security.Claims.ClaimsIdentity(
+                        identity.Claims, identity.AuthenticationType, "email", "role");
+                    context.Principal = new System.Security.Claims.ClaimsPrincipal(newIdentity);
+                }
             }
             return Task.CompletedTask;
         }

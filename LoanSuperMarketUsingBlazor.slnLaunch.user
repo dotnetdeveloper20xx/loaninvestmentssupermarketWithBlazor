@@ -1,0 +1,15 @@
+[
+  {
+    "Name": "New Profile",
+    "Projects": [
+      {
+        "Path": "src\\LoanSuperMarket.Api\\LoanSuperMarket.Api.csproj",
+        "Action": "StartWithoutDebugging"
+      },
+      {
+        "Path": "src\\LoanSuperMarket.Blazor\\LoanSuperMarket.Blazor.csproj",
+        "Action": "StartWithoutDebugging"
+      }
+    ]
+  }
+]

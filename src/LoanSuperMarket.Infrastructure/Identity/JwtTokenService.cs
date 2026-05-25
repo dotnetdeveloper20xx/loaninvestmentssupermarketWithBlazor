@@ -210,7 +210,7 @@ public sealed class JwtTokenService : ITokenService
         // Add role claims
         foreach (var role in roles)
         {
-            claims.Add(new Claim(ClaimTypes.Role, role));
+            claims.Add(new Claim("role", role));
         }
 
         // Add permission claims (format: "Module.Action")
@@ -224,7 +224,7 @@ public sealed class JwtTokenService : ITokenService
 
         var tokenDescriptor = new SecurityTokenDescriptor
         {
-            Subject = new ClaimsIdentity(claims),
+            Subject = new ClaimsIdentity(claims, "jwt", "email", "role"),
             Expires = expires,
             NotBefore = now,
             IssuedAt = now,
@@ -234,6 +234,7 @@ public sealed class JwtTokenService : ITokenService
         };
 
         var tokenHandler = new JwtSecurityTokenHandler();
+        tokenHandler.OutboundClaimTypeMap.Clear();
         var token = tokenHandler.CreateToken(tokenDescriptor);
 
         return tokenHandler.WriteToken(token);

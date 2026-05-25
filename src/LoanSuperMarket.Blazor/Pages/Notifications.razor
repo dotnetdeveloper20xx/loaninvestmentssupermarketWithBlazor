@@ -1,0 +1,12 @@
+@page "/notifications"
+
+@using Microsoft.AspNetCore.Authorization
+@attribute [Authorize]
+
+<PageHeader Title="Notifications"
+            Subtitle="View your recent platform notifications and alerts.">
+</PageHeader>
+
+<EmptyState Icon="🔔"
+            Title="No notifications"
+            Message="You're all caught up! New notifications will appear here when there are updates to your loans, applications, or account." />

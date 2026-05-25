@@ -1,0 +1,132 @@
+@page "/payments"
+
+@using Microsoft.AspNetCore.Authorization
+@using LoanSuperMarket.Shared.Dashboard
+@attribute [Authorize(Roles = "Admin,Borrower")]
+@inject DashboardApiClient DashboardApiClient
+@inject NavigationManager Navigation
+@inject ToastService ToastService
+
+<PageHeader Title="Payments"
+            Subtitle="View and manage loan repayments across all active schedules.">
+</PageHeader>
+
+@if (!string.IsNullOrWhiteSpace(_errorMessage))
+{
+    <div class="mb-6 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+        @_errorMessage
+    </div>
+}
+
+@if (_isLoading)
+{
+    <LoadingSkeleton Variant="table" Rows="5" />
+}
+else if (_loans.Count == 0)
+{
+    <EmptyState Icon="💳"
+                Title="No active loans"
+                Message="There are no active loans with repayment schedules to display." />
+}
+else
+{
+    <div class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+        <table class="w-full">
+            <thead class="bg-slate-50 border-b border-slate-200">
+                <tr>
+                    <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">Product</th>
+                    <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">Funded Amount</th>
+                    <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">Term</th>
+                    <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">Rate</th>
+                    <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">Progress</th>
+                    <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">Next Due</th>
+                    <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">Status</th>
+                    <th class="px-6 py-4 text-right text-xs font-semibold uppercase tracking-wide text-slate-500">Actions</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100">
+                @foreach (var loan in _loans)
+                {
+                    <tr class="hover:bg-slate-50">
+                        <td class="px-6 py-4 text-sm font-medium text-slate-900">@loan.ProductTitle</td>
+                        <td class="px-6 py-4 text-sm font-semibold text-slate-900">£@loan.FundedAmount.ToString("N0")</td>
+                        <td class="px-6 py-4 text-sm text-slate-700">@loan.TermMonths months</td>
+                        <td class="px-6 py-4 text-sm text-slate-700">@loan.EffectiveRate.ToString("N2")%</td>
+                        <td class="px-6 py-4">
+                            <div class="flex items-center gap-2">
+                                <div class="w-24 h-2 bg-slate-200 rounded-full overflow-hidden">
+                                    <div class="h-full bg-green-500 rounded-full" style="width: @loan.ProgressPercentage%"></div>
+                                </div>
+                                <span class="text-xs text-slate-500">@loan.PaidCount/@loan.TotalCount</span>
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 text-sm text-slate-500">@(loan.NextDueDate?.ToString("dd MMM yyyy") ?? "Complete")</td>
+                        <td class="px-6 py-4">
+                            @if (loan.HasLateOrMissed)
+                            {
+                                <span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold bg-red-100 text-red-800">Late</span>
+                            }
+                            else if (loan.IsDueSoon)
+                            {
+                                <span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold bg-amber-100 text-amber-800">Due Soon</span>
+                            }
+                            else
+                            {
+                                <span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold bg-green-100 text-green-800">On Track</span>
+                            }
+                        </td>
+                        <td class="px-6 py-4 text-right">
+                            <button class="rounded-lg border border-blue-200 px-3 py-2 text-xs font-semibold text-blue-700 hover:bg-blue-50"
+                                    @onclick="() => ViewSchedule(loan.ScheduleId)">
+                                View Schedule
+                            </button>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}
+
+@code {
+    private List<BorrowerLoanDto> _loans = [];
+    private bool _isLoading = true;
+    private string? _errorMessage;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadLoansAsync();
+    }
+
+    private async Task LoadLoansAsync()
+    {
+        _isLoading = true;
+        _errorMessage = null;
+
+        try
+        {
+            var response = await DashboardApiClient.GetBorrowerLoansAsync();
+            if (response?.Success == true && response.Data is not null)
+            {
+                _loans = response.Data.ToList();
+            }
+            else
+            {
+                _loans = [];
+            }
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = $"Unable to load payment data. {ex.Message}";
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private void ViewSchedule(Guid scheduleId)
+    {
+        Navigation.NavigateTo($"/repayment-schedule/{scheduleId}");
+    }
+}

@@ -32,11 +32,13 @@ public sealed class CurrentUserService : ICurrentUserService
 
     /// <inheritdoc />
     public IReadOnlyList<string> Roles =>
-        User?.FindAll(ClaimTypes.Role)
+        (User?.FindAll("role")
+            .Concat(User?.FindAll(ClaimTypes.Role) ?? [])
             .Select(c => c.Value)
+            .Distinct()
             .ToList()
             .AsReadOnly()
-        ?? (IReadOnlyList<string>)Array.Empty<string>();
+        ?? (IReadOnlyList<string>)Array.Empty<string>());
 
     /// <inheritdoc />
     public bool IsAuthenticated =>

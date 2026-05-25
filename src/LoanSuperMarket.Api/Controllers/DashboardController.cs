@@ -16,7 +16,7 @@ namespace LoanSuperMarket.Api.Controllers;
 
 [ApiController]
 [Route("api/dashboard")]
-[Authorize(Policy = "CanViewReports")]
+[Authorize]
 public sealed class DashboardController : ControllerBase
 {
     private readonly ISender _sender;
@@ -27,6 +27,7 @@ public sealed class DashboardController : ControllerBase
     }
 
     [HttpGet("summary")]
+    [Authorize(Roles = "Admin,CrmManager,Auditor")]
     public async Task<ActionResult<ApiResponse<DashboardSummaryDto>>> GetSummary(
         CancellationToken cancellationToken)
     {
@@ -40,6 +41,7 @@ public sealed class DashboardController : ControllerBase
     }
 
     [HttpGet("lender/portfolio")]
+    [Authorize(Roles = "Lender,Admin")]
     public async Task<ActionResult<ApiResponse<LenderPortfolioDto>>> GetLenderPortfolio(
         CancellationToken cancellationToken)
     {
@@ -48,6 +50,7 @@ public sealed class DashboardController : ControllerBase
     }
 
     [HttpGet("lender/loans")]
+    [Authorize(Roles = "Lender,Admin")]
     public async Task<ActionResult<ApiResponse<IReadOnlyList<LenderLoanDto>>>> GetLenderLoans(
         [FromQuery] string? performance,
         [FromQuery] string? sortBy,
@@ -64,6 +67,7 @@ public sealed class DashboardController : ControllerBase
     }
 
     [HttpGet("lender/earnings")]
+    [Authorize(Roles = "Lender,Admin")]
     public async Task<ActionResult<ApiResponse<LenderEarningsDto>>> GetLenderEarnings(
         CancellationToken cancellationToken)
     {
@@ -72,6 +76,7 @@ public sealed class DashboardController : ControllerBase
     }
 
     [HttpGet("lender/analytics")]
+    [Authorize(Roles = "Lender,Admin")]
     public async Task<ActionResult<ApiResponse<InvestorAnalyticsDto>>> GetInvestorAnalytics(
         CancellationToken cancellationToken)
     {
@@ -82,6 +87,7 @@ public sealed class DashboardController : ControllerBase
     }
 
     [HttpGet("borrower/loans")]
+    [Authorize(Roles = "Borrower,Admin")]
     public async Task<ActionResult<ApiResponse<IReadOnlyList<BorrowerLoanDto>>>> GetBorrowerLoans(
         CancellationToken cancellationToken)
     {
@@ -90,6 +96,7 @@ public sealed class DashboardController : ControllerBase
     }
 
     [HttpGet("borrower/upcoming")]
+    [Authorize(Roles = "Borrower,Admin")]
     public async Task<ActionResult<ApiResponse<BorrowerPaymentSummaryDto>>> GetBorrowerPaymentSummary(
         CancellationToken cancellationToken)
     {
@@ -98,6 +105,7 @@ public sealed class DashboardController : ControllerBase
     }
 
     [HttpGet("audit/{entityName}/{entityId:guid}")]
+    [Authorize(Roles = "Admin,Auditor")]
     public async Task<ActionResult<ApiResponse<IReadOnlyList<AuditLogDto>>>> GetAuditTrail(
         string entityName,
         Guid entityId,

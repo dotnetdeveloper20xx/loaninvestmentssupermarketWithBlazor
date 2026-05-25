@@ -34,7 +34,7 @@ public static class DependencyInjection
             options.UseSqlServer(connectionString);
         });
 
-        services.AddIdentity<ApplicationUser, CustomRole>(options =>
+        services.AddIdentityCore<ApplicationUser>(options =>
         {
             options.Password.RequiredLength = 8;
             options.Password.RequireUppercase = true;
@@ -48,8 +48,10 @@ public static class DependencyInjection
 
             options.User.RequireUniqueEmail = true;
         })
+        .AddRoles<CustomRole>()
         .AddEntityFrameworkStores<AuthIdentityDbContext>()
-        .AddDefaultTokenProviders();
+        .AddDefaultTokenProviders()
+        .AddSignInManager();
 
         services.AddHttpContextAccessor();
         services.AddScoped<ICurrentUserService, CurrentUserService>();

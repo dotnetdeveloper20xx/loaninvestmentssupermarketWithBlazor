@@ -9,11 +9,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
 
-namespace LoanSuperMarket.Infrastructure.Persistence.Migrations
+namespace LoanSuperMarket.Infrastructure.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20260522172257_AddRepaymentScheduleAndInstallments")]
-    partial class AddRepaymentScheduleAndInstallments
+    [Migration("20260525084158_InitialCreate")]
+    partial class InitialCreate
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
