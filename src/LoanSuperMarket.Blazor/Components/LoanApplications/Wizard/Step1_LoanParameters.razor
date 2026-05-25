@@ -168,6 +168,11 @@
                 WizardState.SetApplicationId(result.Data);
             }
 
+            // Persist parameters in wizard state for the review step
+            WizardState.Purpose = Purpose;
+            WizardState.RequestedAmount = RequestedAmount;
+            WizardState.TermMonths = TermMonths;
+
             await OnNext.InvokeAsync();
         }
         catch (Exception ex)

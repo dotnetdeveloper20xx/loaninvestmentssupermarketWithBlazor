@@ -34,7 +34,7 @@ public sealed class IdentityService : IIdentityService
             Email = request.Email,
             FirstName = request.FirstName,
             LastName = request.LastName,
-            AccountStatus = AccountStatus.PendingApproval,
+            AccountStatus = AccountStatus.Active,
             CreatedAtUtc = DateTime.UtcNow
         };
 

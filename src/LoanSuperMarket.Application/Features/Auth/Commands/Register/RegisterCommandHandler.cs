@@ -52,6 +52,9 @@ public sealed class RegisterCommandHandler
         var confirmationToken = await _identityService.GenerateEmailConfirmationTokenAsync(
             userId, cancellationToken);
 
+        // Auto-confirm email in development (no email provider configured)
+        await _identityService.ConfirmEmailAsync(userId, confirmationToken, cancellationToken);
+
         await _emailService.SendEmailConfirmationAsync(
             request.Email, userId, confirmationToken, cancellationToken);
 

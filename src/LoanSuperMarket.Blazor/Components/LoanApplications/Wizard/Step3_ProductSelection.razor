@@ -156,6 +156,10 @@
                 return;
             }
 
+            // Save selected product title for the review step
+            var selectedProduct = _products?.FirstOrDefault(p => p.ProductId == _selectedProductId.Value);
+            WizardState.SelectedProductTitle = selectedProduct?.Title;
+
             await OnNext.InvokeAsync();
         }
         catch (Exception ex)

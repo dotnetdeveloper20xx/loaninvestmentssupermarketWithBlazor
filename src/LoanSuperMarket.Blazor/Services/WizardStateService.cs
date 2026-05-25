@@ -6,6 +6,14 @@ public sealed class WizardStateService
 
     public int CurrentStep { get; private set; } = 1;
 
+    // Data from Step 1
+    public string Purpose { get; set; } = string.Empty;
+    public decimal RequestedAmount { get; set; }
+    public int TermMonths { get; set; }
+
+    // Data from Step 3
+    public string? SelectedProductTitle { get; set; }
+
     public void SetApplicationId(Guid id)
     {
         ApplicationId = id;
@@ -23,5 +31,9 @@ public sealed class WizardStateService
     {
         ApplicationId = null;
         CurrentStep = 1;
+        Purpose = string.Empty;
+        RequestedAmount = 0;
+        TermMonths = 0;
+        SelectedProductTitle = null;
     }
 }

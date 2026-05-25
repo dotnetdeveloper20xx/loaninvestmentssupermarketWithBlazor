@@ -31,19 +31,19 @@
                 <dl class="grid grid-cols-2 gap-3 text-sm">
                     <div>
                         <dt class="text-slate-500">Purpose</dt>
-                        <dd class="font-medium text-slate-800 mt-0.5">@(_summary?.Purpose ?? "—")</dd>
+                        <dd class="font-medium text-slate-800 mt-0.5">@(WizardState.Purpose)</dd>
                     </div>
                     <div>
                         <dt class="text-slate-500">Requested Amount</dt>
-                        <dd class="font-medium text-slate-800 mt-0.5">@(_summary?.RequestedAmount.ToString("N2") ?? "—")</dd>
+                        <dd class="font-medium text-slate-800 mt-0.5">£@(WizardState.RequestedAmount.ToString("N2"))</dd>
                     </div>
                     <div>
                         <dt class="text-slate-500">Term</dt>
-                        <dd class="font-medium text-slate-800 mt-0.5">@(_summary?.TermMonths ?? 0) months</dd>
+                        <dd class="font-medium text-slate-800 mt-0.5">@(WizardState.TermMonths) months</dd>
                     </div>
                     <div>
                         <dt class="text-slate-500">Selected Product</dt>
-                        <dd class="font-medium text-slate-800 mt-0.5">@(_summary?.ProductTitle ?? "—")</dd>
+                        <dd class="font-medium text-slate-800 mt-0.5">@(WizardState.SelectedProductTitle ?? "—")</dd>
                     </div>
                 </dl>
             </div>

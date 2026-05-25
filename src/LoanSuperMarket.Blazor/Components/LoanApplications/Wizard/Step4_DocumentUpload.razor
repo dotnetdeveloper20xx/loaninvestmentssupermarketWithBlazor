@@ -126,14 +126,23 @@
 
         _uploadingType = args.DocumentType;
         _serverError = null;
-        StateHasChanged();
 
         try
         {
-            using var stream = args.File.OpenReadStream(maxAllowedSize: 10 * 1024 * 1024);
+            // Buffer the file into memory BEFORE any StateHasChanged call
+            // to avoid the _blazorFilesById null reference error
+            using var memoryStream = new MemoryStream();
+            await using (var browserStream = args.File.OpenReadStream(maxAllowedSize: 10 * 1024 * 1024))
+            {
+                await browserStream.CopyToAsync(memoryStream);
+            }
+            memoryStream.Position = 0;
+
+            StateHasChanged();
+
             var result = await WizardApi.UploadDocumentAsync(
                 WizardState.ApplicationId.Value,
-                stream,
+                memoryStream,
                 args.File.Name,
                 args.DocumentType);
 
